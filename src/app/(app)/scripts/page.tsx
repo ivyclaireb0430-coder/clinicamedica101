@@ -3,10 +3,16 @@ import { requirePermission } from "@/lib/session";
 import { can } from "@/lib/roles";
 import { PageHeader } from "@/components/ui";
 import { saveScript } from "./actions";
+import { SCRIPTS as DEFAULT_SCRIPTS } from "../../../../prisma/seed-data";
 
 export default async function ScriptsPage() {
   const user = await requirePermission("leads:read");
   const editable = can(user.role, "scripts:write");
+  // Add any default scripts introduced by newer versions without touching edited ones.
+  const existing = new Set((await db.script.findMany({ select: { key: true } })).map((s) => s.key));
+  for (const [i, s] of DEFAULT_SCRIPTS.entries()) {
+    if (!existing.has(s.key)) await db.script.create({ data: { ...s, sortOrder: i } });
+  }
   const scripts = await db.script.findMany({ orderBy: [{ sortOrder: "asc" }] });
   const categories = [...new Set(scripts.map((s) => s.category))];
 
