@@ -33,3 +33,25 @@ export function encryptOptional(plain: string | null | undefined): string | null
 export function decryptOptional(stored: string | null | undefined): string | null {
   return stored ? decrypt(stored) : null;
 }
+
+/** Encrypt a file's bytes: [12-byte IV][16-byte tag][ciphertext]. */
+export function encryptBuffer(plain: Buffer): Buffer {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", getKey(), iv);
+  const enc = Buffer.concat([cipher.update(plain), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), enc]);
+}
+
+export function decryptBuffer(stored: Buffer): Buffer {
+  const decipher = createDecipheriv("aes-256-gcm", getKey(), stored.subarray(0, 12));
+  decipher.setAuthTag(stored.subarray(12, 28));
+  return Buffer.concat([decipher.update(stored.subarray(28)), decipher.final()]);
+}
+
+export function encryptJson(value: unknown): string {
+  return encrypt(JSON.stringify(value));
+}
+
+export function decryptJson<T>(stored: string | null | undefined): T | null {
+  return stored ? (JSON.parse(decrypt(stored)) as T) : null;
+}

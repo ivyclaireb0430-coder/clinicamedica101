@@ -12,7 +12,7 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 0 | Plan: data model, screens, Meta/Google setup | Done |
 | 1 | Login + roles + 2FA, leads pipeline, saved Taglish scripts, booking calendar, Google Calendar sync | **Done** |
 | 2 | Messenger webhook: auto-replies, quick replies, booking flow, human takeover, reminders | **Done** |
-| 3 | Patient intake + pre-consult form, assessment notes, treatment plan + consent, session log | |
+| 3 | Patient intake + pre-consult form, assessment notes, treatment plan + consent, session log | **Done** |
 | 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | |
 | 5 | Weekly dashboard, Monday email, CSV/Sheets export, audit log screen, optional AI assistant | |
 | 6 | Deployment, backup/restore, Taglish SOPs | |
@@ -76,3 +76,20 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
 - Meta retired the CONFIRMED_EVENT_UPDATE tag on Feb 10, 2026. Reminders outside 24h use a UTILITY template
   (Settings → Messenger → "Create template on Meta"; needs the `page_utility_messaging` permission).
 - Message text is encrypted at rest. Front desk cannot open Messenger conversations (they may contain health details).
+
+## Consultation & treatment (Phase 3)
+
+- **Convert lead → patient** from the lead page (no re-typing); patients get numbers like `CM-0001`.
+- **Pre-consult form**: "Send intake form" creates a one-time link (valid 7 days) at `/intake/<token>`, optionally sent
+  via Messenger. It collects demographics, chief complaint, history, medications, allergies, lifestyle, prior
+  treatments and goals, and requires Data Privacy Act consent. Answers are encrypted; only the doctor/owner see them.
+- **Assessments**: chief complaint (pre-filled from the form), symptoms, exam findings, investigations, results,
+  findings explained, plus result uploads (PDF/images, 10 MB each), encrypted on disk in `UPLOAD_DIR`.
+- **Treatment plans**: modalities × sessions × price with a live total, schedule, benefits, risks, alternatives.
+  Status flow Draft → Proposed → Accepted → Started → Completed (or Declined/Cancelled). A plan **cannot be Started
+  without a recorded informed consent** (date, explained by, acknowledgement, optional signed-form upload).
+  Accepted plans are locked; changes mean a new plan.
+- **Session log** per visit with progress notes.
+- **Printable plan + cost estimate** for the patient at `/print/plans/<id>` (browser Print → Save as PDF). It never
+  includes assessment notes.
+- Front desk sees patient demographics and appointments only; clinical tabs, files and print pages are blocked.

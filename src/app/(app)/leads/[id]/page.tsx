@@ -10,6 +10,7 @@ import { formatDate, formatDateTime, formatTime } from "@/lib/time";
 import { BackLink, StatusBadge } from "@/components/ui";
 import { ScriptPicker } from "@/components/ScriptPicker";
 import { changeStage, markContacted } from "../actions";
+import { convertLead, createIntakeLink } from "../../patients/actions";
 
 export default async function LeadDetail({
   params,
@@ -27,6 +28,8 @@ export default async function LeadDetail({
       campaign: true,
       stageChanges: { orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } },
       appointments: { orderBy: { startAt: "desc" }, include: { consultationType: true } },
+      patient: { select: { id: true, patientNo: true } },
+      intakeForms: { orderBy: { createdAt: "desc" }, take: 3 },
     },
   });
   if (!lead) notFound();
@@ -70,6 +73,27 @@ export default async function LeadDetail({
             <Link href={`/calendar/new?leadId=${lead.id}`} className="btn">Book consult</Link>
             <form action={markContacted.bind(null, lead.id)}>
               <button className="btn-secondary">Mark contacted</button>
+            </form>
+            {lead.patient ? (
+              <Link href={`/patients/${lead.patient.id}`} className="btn-secondary">Patient {lead.patient.patientNo} →</Link>
+            ) : (
+              <form action={convertLead.bind(null, lead.id)}>
+                <button className="btn-secondary">Convert to patient</button>
+              </form>
+            )}
+          </div>
+          <div className="space-y-2 border-t border-slate-100 pt-3">
+            <div className="font-medium">Pre-consult form</div>
+            {lead.intakeForms.map((f) => (
+              <div key={f.id} className="muted text-xs">
+                {f.status === "SUBMITTED" ? `Submitted ${formatDate(f.submittedAt!)}` : f.expiresAt < new Date() ? "Link expired" : (
+                  <span className="break-all">Link: {process.env.APP_URL ?? ""}/intake/{f.token}</span>
+                )}
+              </div>
+            ))}
+            <form action={createIntakeLink.bind(null, { leadId: lead.id })} className="flex flex-wrap items-center gap-2">
+              {lead.psid && <label className="flex items-center gap-1 text-xs"><input type="checkbox" name="viaMessenger" defaultChecked /> via Messenger</label>}
+              <button className="btn-secondary py-1 text-xs">Send intake form</button>
             </form>
           </div>
         </section>
