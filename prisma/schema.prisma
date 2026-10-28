@@ -1,0 +1,192 @@
+// Clinica Medica 101 — data model.
+// Dev uses SQLite. For production switch provider to "postgresql" (see docs/DEPLOY.md).
+// Fields ending in "Enc" are AES-256-GCM encrypted by src/lib/crypto.ts before saving.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────── Users & security ─────────────
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String
+  passwordHash   String
+  role           String // OWNER | DOCTOR | FRONT_DESK
+  totpSecretEnc  String?
+  totpEnabled    Boolean   @default(false)
+  active         Boolean   @default(true)
+  failedLogins   Int       @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  auditLogs      AuditLog[]
+  stageChanges   LeadStageChange[]
+  googleAccount  GoogleAccount?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String // VIEW | CREATE | UPDATE | DELETE | LOGIN | LOGIN_FAILED | EXPORT ...
+  entity    String // Lead | Appointment | User ...
+  entityId  String?
+  detail    String? // never patient health data
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+// ───────────── Marketing (attribution) ─────────────
+
+model Campaign {
+  id           String   @id @default(cuid())
+  name         String
+  channel      String // FB_REEL | FB_POST | RADIO | REFERRAL | OTHER
+  trackingCode String   @unique // used as m.me ?ref= value
+  startDate    DateTime?
+  endDate      DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  leads        Lead[]
+}
+
+// ───────────── Inquiries / leads ─────────────
+
+model Lead {
+  id              String    @id @default(cuid())
+  firstName       String
+  lastName        String?
+  psid            String?   @unique // Messenger page-scoped ID
+  mobile          String?
+  email           String?
+  source          String // MESSENGER | FB_REEL | FB_POST | RADIO | REFERRAL | WALK_IN | WEBSITE | OTHER
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id])
+  concernEnc      String? // short health concern (sensitive, encrypted)
+  stage           String    @default("NEW")
+  lostReason      String?
+  privacyConsent  Boolean   @default(false)
+  consentAt       DateTime?
+  firstContactAt  DateTime  @default(now())
+  lastContactAt   DateTime  @default(now())
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  stageChanges    LeadStageChange[]
+  appointments    Appointment[]
+
+  @@index([stage])
+}
+
+model LeadStageChange {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStage String?
+  toStage   String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([toStage, createdAt])
+}
+
+model Script {
+  id        String   @id @default(cuid())
+  key       String   @unique // e.g. first_reply, fee, no_show_rebook
+  title     String
+  category  String
+  body      String // Taglish, placeholders {first_name} {date} {time}
+  sortOrder Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+// ───────────── Booking ─────────────
+
+model ConsultationType {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  durationMin  Int
+  feePhp       Int // whole pesos
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+
+  appointments Appointment[]
+}
+
+model ScheduleRule {
+  id        String @id @default(cuid())
+  weekday   Int // 0 = Sunday … 6 = Saturday (Manila time)
+  startTime String // "09:00"
+  endTime   String // "17:00"
+}
+
+model BlockedDate {
+  id      String   @id @default(cuid())
+  date    String // "YYYY-MM-DD" Manila date
+  reason  String?
+}
+
+model Appointment {
+  id                 String           @id @default(cuid())
+  leadId             String
+  lead               Lead             @relation(fields: [leadId], references: [id])
+  consultationTypeId String
+  consultationType   ConsultationType @relation(fields: [consultationTypeId], references: [id])
+  startAt            DateTime
+  endAt              DateTime
+  status             String           @default("BOOKED") // BOOKED | CONFIRMED | ATTENDED | NO_SHOW | CANCELLED | RESCHEDULED
+  channel            String           @default("STAFF") // STAFF | MESSENGER | WEBSITE
+  googleEventId      String?
+  rescheduledFromId  String?
+  notes              String? // scheduling notes only — no clinical content
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([startAt])
+  @@index([status])
+}
+
+// Busy times pulled from the doctor's Google Calendar (not clinic appointments).
+model ExternalBusy {
+  id            String   @id @default(cuid())
+  googleEventId String   @unique
+  startAt       DateTime
+  endAt         DateTime
+  summary       String?
+
+  @@index([startAt])
+}
+
+model GoogleAccount {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  email           String?
+  calendarId      String   @default("primary")
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  expiresAt       DateTime
+  lastSyncAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
