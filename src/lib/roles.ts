@@ -18,19 +18,26 @@ export type Permission =
   | "scripts:write"
   | "settings:manage"
   | "users:manage"
-  | "audit:read";
+  | "audit:read"
+  | "billing:read" // charges, payments, receipts, daily collections
+  | "billing:write"
+  | "billing:void" // void a payment or charge
+  | "reports:read" // receivables aging and monthly performance
+  | "feedback:read"; // patient feedback comments can mention health details
 
 const MATRIX: Record<Role, Permission[]> = {
   OWNER: [
     "leads:read", "leads:write", "lead_concern:read", "clinical:read", "clinical:write",
     "booking:read", "booking:write", "scripts:write", "settings:manage", "users:manage", "audit:read",
+    "billing:read", "billing:write", "billing:void", "reports:read", "feedback:read",
   ],
   DOCTOR: [
     "leads:read", "leads:write", "lead_concern:read", "clinical:read", "clinical:write",
     "booking:read", "booking:write", "scripts:write",
+    "billing:read", "billing:write", "reports:read", "feedback:read",
   ],
   // Front desk handles scheduling and inquiries but never sees health information.
-  FRONT_DESK: ["leads:read", "leads:write", "booking:read", "booking:write"],
+  FRONT_DESK: ["leads:read", "leads:write", "booking:read", "booking:write", "billing:read", "billing:write"],
 };
 
 export function isRole(value: unknown): value is Role {

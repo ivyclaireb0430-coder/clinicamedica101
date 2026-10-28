@@ -9,6 +9,7 @@ import { APPOINTMENT_STATUSES, appointmentStatusLabel } from "@/lib/constants";
 import { addDays, formatDate, formatDateTime, formatPhp, formatTime, manilaDateString, manilaToUtc, todayManila } from "@/lib/time";
 import { BackLink, StatusBadge } from "@/components/ui";
 import { reschedule, updateStatus } from "../../calendar/actions";
+import { chargeAppointment } from "../../billing/actions";
 
 export default async function AppointmentDetail({
   params,
@@ -20,7 +21,7 @@ export default async function AppointmentDetail({
   const user = await requirePermission("booking:read");
   const { id } = await params;
   const sp = await searchParams;
-  const appt = await db.appointment.findUnique({ where: { id }, include: { lead: { include: { patient: { select: { id: true, patientNo: true } } } }, consultationType: true } });
+  const appt = await db.appointment.findUnique({ where: { id }, include: { lead: { include: { patient: { select: { id: true, patientNo: true } } } }, consultationType: true, charges: { where: { voidedAt: null } } } });
   if (!appt) notFound();
   await audit({ userId: user.id, action: "VIEW", entity: "Appointment", entityId: id });
 
@@ -34,6 +35,7 @@ export default async function AppointmentDetail({
       <BackLink href={`/calendar?date=${manilaDateString(appt.startAt)}`} label="Calendar" />
       {sp.booked && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Booked! Nailagay na rin sa Google Calendar (kung naka-connect).</p>}
       {sp.rescheduled && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Rescheduled.</p>}
+      {sp.error === "nopatient" && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Gawin munang patient record ang lead bago mag-charge.</p>}
       {sp.error === "taken" && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Na-book na ang oras na iyon. Pumili ng iba.</p>}
 
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -61,6 +63,15 @@ export default async function AppointmentDetail({
               <Link href={`/patients/${appt.lead.patient.id}`} className="btn-secondary">Patient {appt.lead.patient.patientNo}</Link>
               {can(user.role, "clinical:write") && (
                 <Link href={`/patients/${appt.lead.patient.id}/assessments/new?appointmentId=${appt.id}`} className="btn">Start assessment</Link>
+              )}
+              {can(user.role, "billing:write") && appt.status === "ATTENDED" && (
+                appt.charges.length ? (
+                  <Link href={`/patients/${appt.lead.patient.id}?tab=billing`} className="btn-secondary">Billing ({formatPhp(appt.charges[0].amountPhp)} charged)</Link>
+                ) : (
+                  <form action={chargeAppointment.bind(null, appt.id)}>
+                    <button className="btn-secondary">Charge consultation {formatPhp(appt.consultationType.feePhp)}</button>
+                  </form>
+                )
               )}
             </div>
           )}

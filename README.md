@@ -13,7 +13,7 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 1 | Login + roles + 2FA, leads pipeline, saved Taglish scripts, booking calendar, Google Calendar sync | **Done** |
 | 2 | Messenger webhook: auto-replies, quick replies, booking flow, human takeover, reminders | **Done** |
 | 3 | Patient intake + pre-consult form, assessment notes, treatment plan + consent, session log | **Done** |
-| 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | |
+| 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | **Done** |
 | 5 | Weekly dashboard, Monday email, CSV/Sheets export, audit log screen, optional AI assistant | |
 | 6 | Deployment, backup/restore, Taglish SOPs | |
 
@@ -93,3 +93,25 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
 - **Printable plan + cost estimate** for the patient at `/print/plans/<id>` (browser Print → Save as PDF). It never
   includes assessment notes.
 - Front desk sees patient demographics and appointments only; clinical tabs, files and print pages are blocked.
+
+## Follow-up & billing (Phase 4)
+
+**Follow-up** (`/followups`, and the Follow-up tab on each patient)
+- Follow-up schedule per patient: next session, reassessment, or check-in, with a due date. Logging a session can set the next date in the same form.
+- Automatic reminders (run by the same `/api/cron/reminders` job, 9 AM–6 PM only): the day before or on the due date, then weekly while overdue, up to 3 times. Patients with a booking are skipped. A visit (attended appointment or logged session) closes follow-ups due up to a week later.
+- **Missed sessions**: a started plan with no session for 14 days and nothing booked gets one reminder per gap.
+- **Recall list**: patients with no visit for 90 days and nothing booked; "Send recall" sends the `recall_inactive` script and creates a check-in follow-up.
+- Channel order for these: Messenger (within 24h) → email → SMS. Meta utility templates are used only for appointment reminders.
+- All timings are in More → Follow-up & billing settings.
+
+**Progress** (Progress tab, clinical roles only): a 0–10 rating of the main complaint per visit, entered on its own or when logging a session, shown as a trend chart plus a table.
+
+**Feedback**: after an attended consultation the patient gets a one-time link (`/feedback/<token>`, 14 days) with a 1–5 rating, comment, and an optional testimonial consent with how they want to be named. Comments are encrypted and only Owner/Doctor can read them. The owner can stop using any testimonial.
+
+**Billing** (Billing tab on each patient, and `/billing`)
+- Charges per visit (one click from an attended appointment, or per session from the session log), and prepaid **packages** whose sessions are used up from the session log.
+- Payments: Cash, GCash, Maya, Credit card (reference number required for non-cash), optional BIR official receipt number. Partial payments and advance payments work; payments are applied to the oldest unpaid charge first.
+- Printable **acknowledgement receipt** (AR-YYYY-00001), with amount in words. It is not a BIR official receipt.
+- Reports: daily collections (front desk can see), receivables per patient with 0-30 / 31-60 / 61-90 / 90+ aging, and a monthly report compared with the previous month (Owner/Doctor).
+- Only the Owner can void a payment or charge, with a reason; voids stay visible.
+- Amounts are whole pesos.

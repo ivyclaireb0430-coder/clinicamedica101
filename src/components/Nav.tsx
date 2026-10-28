@@ -9,6 +9,8 @@ const ITEMS = [
   { href: "/leads", label: "Leads", icon: "M17 20h5v-2a4 4 0 00-5-3.9M9 20H2v-2a4 4 0 014-4h3a4 4 0 014 4v2zm3-12a4 4 0 11-8 0 4 4 0 018 0zm6 2a3 3 0 11-6 0 3 3 0 016 0z" },
   { href: "/patients", label: "Patients", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM19 3v4m-2-2h4" },
   { href: "/calendar", label: "Calendar", icon: "M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" },
+  { href: "/followups", label: "Follow-up", phone: false, icon: "M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { href: "/billing", label: "Billing", phone: false, icon: "M3 7h18v10H3zM3 10h18M7 15h3" },
   { href: "/scripts", label: "Scripts", phone: false, icon: "M8 10h8M8 14h5m-9 6l3-3h10a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14z" },
   { href: "/settings", label: "More", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zm7.4-3a7.4 7.4 0 00-.1-1.3l2-1.6-2-3.4-2.4 1a7.5 7.5 0 00-2.2-1.3L14.3 3h-4l-.4 2.4a7.5 7.5 0 00-2.2 1.3l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 000 2.6l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 002.2 1.3l.4 2.4h4l.4-2.4a7.5 7.5 0 002.2-1.3l2.4 1 2-3.4-2-1.6c.1-.4.1-.9.1-1.3z" },
 ];
@@ -29,7 +31,7 @@ export function Nav({ userName, inboxCount }: { userName: string; inboxCount: nu
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-56 flex-col border-r border-slate-200 bg-white p-4 md:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-56 print:!hidden flex-col border-r border-slate-200 bg-white p-4 md:flex">
         <div className="mb-6 px-2">
           <div className="font-semibold text-brand-700">Clinica Medica 101</div>
           <div className="muted truncate">{userName}</div>
@@ -51,7 +53,7 @@ export function Nav({ userName, inboxCount }: { userName: string; inboxCount: nu
         </nav>
       </aside>
       {/* Phone bottom bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex print:hidden border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {items.filter((item) => item.phone !== false).map((item) => (
           <Link
             key={item.href}

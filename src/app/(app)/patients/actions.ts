@@ -15,6 +15,9 @@ import { renderScript } from "@/lib/scripts";
 import { sendText, withinWindow } from "@/lib/messenger/meta";
 import { storeOutgoing } from "@/lib/messenger/handler";
 import { todayManila } from "@/lib/time";
+import { can } from "@/lib/roles";
+import { packageActive } from "@/lib/billing";
+import { closeFollowUpsForVisit } from "@/lib/visits";
 
 const text = (fd: FormData, k: string) => {
   const v = fd.get(k);
@@ -211,12 +214,33 @@ export async function recordConsent(planId: string, fd: FormData) {
 
 export async function addSession(planId: string, fd: FormData) {
   const user = await requirePermission("clinical:write");
-  const plan = await db.treatmentPlan.findUniqueOrThrow({ where: { id: planId } });
+  const plan = await db.treatmentPlan.findUniqueOrThrow({ where: { id: planId }, include: { items: true } });
   const back = `/patients/${plan.patientId}/plans/${planId}`;
   if (plan.status !== "STARTED") redirect(`${back}?error=${encodeURIComponent("Start the plan before logging sessions")}`);
   const date = text(fd, "date") ?? todayManila();
   const modality = text(fd, "modality");
   if (!modality) redirect(`${back}?error=${encodeURIComponent("Choose the modality for this session")}`);
+  const scoreRaw = text(fd, "score");
+  const score = scoreRaw === null ? null : Number(scoreRaw);
+  if (score !== null && !(Number.isInteger(score) && score >= 0 && score <= 10)) redirect(`${back}?error=${encodeURIComponent("Progress score must be 0 to 10")}`);
+  const nextDate = text(fd, "nextDate");
+  if (nextDate && !/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) redirect(`${back}?error=${encodeURIComponent("Invalid next follow-up date")}`);
+
+  // Billing for this session: a charge, one prepaid package session, or nothing.
+  const billing = text(fd, "billing") ?? "none";
+  // Blank amount = the plan's unit price for this modality.
+  const amount = Number(text(fd, "chargeAmount") ?? plan.items.find((i) => i.modality === modality)?.unitPricePhp ?? 0);
+  let packageId: string | null = null;
+  if (billing.startsWith("package:")) {
+    if (!can(user.role, "billing:write")) redirect(`${back}?error=${encodeURIComponent("No billing access")}`);
+    packageId = billing.slice("package:".length);
+    const pkg = await db.patientPackage.findUnique({ where: { id: packageId }, include: { uses: true } });
+    if (!pkg || pkg.patientId !== plan.patientId || !packageActive(pkg)) redirect(`${back}?error=${encodeURIComponent("That package has no sessions left")}`);
+  } else if (billing === "charge") {
+    if (!can(user.role, "billing:write")) redirect(`${back}?error=${encodeURIComponent("No billing access")}`);
+    if (!(Number.isInteger(amount) && amount > 0)) redirect(`${back}?error=${encodeURIComponent("Enter the session charge in whole pesos")}`);
+  }
+
   const s = await db.treatmentSession.create({
     data: {
       planId, patientId: plan.patientId, date, modality, appointmentId: text(fd, "appointmentId"),
@@ -224,5 +248,34 @@ export async function addSession(planId: string, fd: FormData) {
     },
   });
   await audit({ userId: user.id, action: "CREATE", entity: "TreatmentSession", entityId: s.id });
+  if (score !== null) {
+    await db.progressEntry.create({ data: { patientId: plan.patientId, sessionId: s.id, date, score, authorId: user.id } });
+  }
+  if (packageId) {
+    await db.packageUse.create({ data: { packageId, sessionId: s.id, date } });
+  } else if (billing === "charge") {
+    await db.charge.create({
+      data: { patientId: plan.patientId, date, category: "SESSION", description: `Treatment session – ${modality}`, amountPhp: amount, sessionId: s.id, createdById: user.id },
+    });
+  }
+  await closeFollowUpsForVisit(plan.patientId, date);
+  if (nextDate) {
+    await db.followUp.create({ data: { patientId: plan.patientId, dueDate: nextDate, kind: "NEXT_SESSION", createdById: user.id } });
+  }
   redirect(`${back}?session=1`);
+}
+
+// ── Progress tracking ──
+
+export async function addProgress(patientId: string, fd: FormData) {
+  const user = await requirePermission("clinical:write");
+  const parsed = z
+    .object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), score: z.coerce.number().int().min(0).max(10), notes: z.string().max(2000).nullable() })
+    .safeParse({ date: text(fd, "date") ?? todayManila(), score: text(fd, "score"), notes: text(fd, "notes") });
+  if (!parsed.success) redirect(`/patients/${patientId}?tab=progress&error=${encodeURIComponent("Score must be 0 to 10")}`);
+  const e = await db.progressEntry.create({
+    data: { patientId, date: parsed.data!.date, score: parsed.data!.score, notesEnc: encryptOptional(parsed.data!.notes), authorId: user.id },
+  });
+  await audit({ userId: user.id, action: "CREATE", entity: "ProgressEntry", entityId: e.id });
+  redirect(`/patients/${patientId}?tab=progress&saved=1`);
 }

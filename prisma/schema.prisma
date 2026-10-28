@@ -164,6 +164,8 @@ model Appointment {
   noShowAutoMarked   Boolean          @default(false)
   assessments        Assessment[]
   sessions           TreatmentSession[]
+  charges            Charge[]
+  feedback           Feedback?
   notes              String? // scheduling notes only — no clinical content
   reminders          Reminder[]
   createdAt          DateTime         @default(now())
@@ -276,6 +278,12 @@ model Patient {
   plans            TreatmentPlan[]
   sessions         TreatmentSession[]
   attachments      Attachment[]
+  followUps        FollowUp[]
+  progress         ProgressEntry[]
+  feedback         Feedback[]
+  charges          Charge[]
+  payments         Payment[]
+  packages         PatientPackage[]
 
   @@index([lastName, firstName])
 }
@@ -353,6 +361,7 @@ model TreatmentPlan {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   startedAt       DateTime?
+  recallSentAt    DateTime? // last "missed session" recall for a stalled plan
 
   items           TreatmentPlanItem[]
   consent         TreatmentConsent?
@@ -397,6 +406,141 @@ model TreatmentSession {
   progressNotesEnc String?
   authorId         String
   createdAt        DateTime      @default(now())
+  progress         ProgressEntry?
+  charge           Charge?
+  packageUse       PackageUse?
 
   @@index([patientId, date])
+}
+
+// ─────────────────────────── Phase 4: Follow-up ───────────────────────────
+
+model FollowUp {
+  id                String    @id @default(cuid())
+  patientId         String
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dueDate           String // "YYYY-MM-DD"
+  kind              String // NEXT_SESSION | REASSESSMENT | CHECK_IN
+  status            String    @default("OPEN") // OPEN | DONE | CANCELLED
+  note              String? // scheduling note only, no clinical content
+  recallCount       Int       @default(0)
+  lastRecallAt      DateTime?
+  lastRecallChannel String?
+  lastRecallError   String?
+  createdById       String?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status, dueDate])
+}
+
+// Per-visit 0–10 rating of the main complaint (clinical).
+model ProgressEntry {
+  id        String            @id @default(cuid())
+  patientId String
+  patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sessionId String?           @unique
+  session   TreatmentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  date      String // "YYYY-MM-DD"
+  score     Int // 0 = worst, 10 = best
+  notesEnc  String?
+  authorId  String
+  createdAt DateTime          @default(now())
+
+  @@index([patientId, date])
+}
+
+model Feedback {
+  id                 String       @id @default(cuid())
+  token              String       @unique
+  patientId          String
+  patient            Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId      String?      @unique
+  appointment        Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  expiresAt          DateTime
+  sentChannel        String?
+  sentError          String?
+  submittedAt        DateTime?
+  rating             Int? // 1–5
+  commentEnc         String?
+  testimonialConsent Boolean      @default(false)
+  displayName        String? // how the patient wants to be named if quoted
+  consentVersion     String?
+  testimonialHidden  Boolean      @default(false) // owner can stop using it at any time
+  createdAt          DateTime     @default(now())
+}
+
+// ─────────────────────────── Phase 4: Financial ───────────────────────────
+// Amounts are whole pesos. Payments are applied to the oldest unpaid charges first (computed, not stored).
+
+model Charge {
+  id            String            @id @default(cuid())
+  patientId     String
+  patient       Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date          String // "YYYY-MM-DD"
+  category      String // CONSULTATION | SESSION | PACKAGE | OTHER
+  description   String // service name only, never a diagnosis
+  amountPhp     Int
+  appointmentId String?
+  appointment   Appointment?      @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  sessionId     String?           @unique
+  session       TreatmentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  packageId     String?           @unique
+  package       PatientPackage?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  voidedAt      DateTime?
+  voidReason    String?
+  createdById   String
+  createdAt     DateTime          @default(now())
+
+  @@index([patientId, date])
+  @@index([date])
+}
+
+model Payment {
+  id           String    @id @default(cuid())
+  receiptNo    String    @unique // acknowledgement receipt no., e.g. AR-2026-00001
+  orNumber     String? // BIR official receipt number, if one was issued
+  patientId    String
+  patient      Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date         String // "YYYY-MM-DD"
+  amountPhp    Int
+  method       String // CASH | GCASH | MAYA | CARD
+  reference    String? // GCash/Maya reference or card approval code
+  notes        String?
+  receivedById String
+  voidedAt     DateTime?
+  voidReason   String?
+  createdAt    DateTime  @default(now())
+
+  @@index([patientId, date])
+  @@index([date])
+}
+
+// Prepaid sessions.
+model PatientPackage {
+  id            String       @id @default(cuid())
+  patientId     String
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name          String
+  sessionsTotal Int
+  pricePhp      Int
+  purchasedOn   String // "YYYY-MM-DD"
+  expiresOn     String?
+  cancelledAt   DateTime?
+  createdById   String
+  createdAt     DateTime     @default(now())
+  charge        Charge?
+  uses          PackageUse[]
+}
+
+model PackageUse {
+  id        String            @id @default(cuid())
+  packageId String
+  package   PatientPackage    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  sessionId String?           @unique
+  session   TreatmentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  date      String
+  note      String?
+  createdAt DateTime          @default(now())
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/session";
-import { can } from "@/lib/roles";
+import { can, type Permission } from "@/lib/roles";
 import { decryptJson, decryptOptional } from "@/lib/crypto";
 import { audit } from "@/lib/audit";
 import { CLINICAL_FIELDS, planStatusLabel, planTotal } from "@/lib/clinical";
@@ -10,13 +10,19 @@ import { appointmentStatusLabel } from "@/lib/constants";
 import { formatDate, formatDateTime, formatPhp } from "@/lib/time";
 import { BackLink, StatusBadge } from "@/components/ui";
 import { createIntakeLink } from "../actions";
+import { BillingTab } from "./BillingTab";
+import { FollowUpTab } from "./FollowUpTab";
+import { ProgressTab } from "./ProgressTab";
 
 const TABS = [
-  { key: "overview", label: "Overview", clinical: false },
-  { key: "intake", label: "Intake", clinical: true },
-  { key: "assessments", label: "Assessments", clinical: true },
-  { key: "plans", label: "Treatment", clinical: true },
-] as const;
+  { key: "overview", label: "Overview", perm: "leads:read" },
+  { key: "intake", label: "Intake", perm: "clinical:read" },
+  { key: "assessments", label: "Assessments", perm: "clinical:read" },
+  { key: "plans", label: "Treatment", perm: "clinical:read" },
+  { key: "progress", label: "Progress", perm: "clinical:read" },
+  { key: "followup", label: "Follow-up", perm: "booking:read" },
+  { key: "billing", label: "Billing", perm: "billing:read" },
+] as const satisfies readonly { key: string; label: string; perm: Permission }[];
 
 const INTAKE_MSG: Record<string, string> = {
   created: "Intake link created. Copy it below and send it to the patient.",
@@ -34,12 +40,13 @@ function age(birthDate: string | null) {
   return a;
 }
 
-export default async function PatientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; intake?: string }> }) {
+export default async function PatientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; intake?: string; saved?: string; paid?: string; error?: string; sent?: string }> }) {
   const user = await requirePermission("leads:read");
   const { id } = await params;
   const sp = await searchParams;
   const clinical = can(user.role, "clinical:read");
-  const tab = TABS.find((t) => t.key === sp.tab && (clinical || !t.clinical))?.key ?? "overview";
+  const tabs = TABS.filter((t) => can(user.role, t.perm));
+  const tab = tabs.find((t) => t.key === sp.tab)?.key ?? "overview";
 
   const patient = await db.patient.findUnique({
     where: { id },
@@ -76,7 +83,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
       </div>
 
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200">
-        {TABS.filter((t) => clinical || !t.clinical).map((t) => (
+        {tabs.map((t) => (
           <Link
             key={t.key}
             href={`/patients/${id}?tab=${t.key}`}
@@ -87,6 +94,13 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
         ))}
       </div>
 
+      {tab !== "billing" && sp.error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{sp.error}</p>}
+      {tab !== "billing" && sp.saved && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Saved.</p>}
+      {sp.sent && (
+        <p className="mb-3 rounded-lg bg-slate-100 p-3 text-sm">
+          {sp.sent === "failed" ? "Hindi naipadala: walang available na channel (Messenger 24h, email, o SMS)." : `Sent via ${sp.sent.toLowerCase().replace("_", " ")}.`}
+        </p>
+      )}
       {sp.intake && <p className="mb-3 rounded-lg bg-slate-100 p-3 text-sm">{INTAKE_MSG[sp.intake] ?? ""}</p>}
 
       {tab === "overview" && (
@@ -172,6 +186,12 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
           ))}
           {assessments.length === 0 && <p className="card muted">No assessments yet.</p>}
         </div>
+      )}
+
+      {tab === "progress" && <ProgressTab patientId={id} canWrite={can(user.role, "clinical:write")} />}
+      {tab === "followup" && <FollowUpTab patientId={id} canWrite={can(user.role, "booking:write")} />}
+      {tab === "billing" && (
+        <BillingTab patientId={id} canWrite={can(user.role, "billing:write")} canVoid={can(user.role, "billing:void")} sp={sp} />
       )}
 
       {tab === "plans" && (

@@ -11,6 +11,15 @@ export const SETTING_DEFAULTS = {
   utilityTemplateLanguage: "en_US",
   autoNoShowHours: "3", // hours after the appointment ends before it is auto-marked No-show
   lastDoctorNotifyAt: "",
+  // Phase 4: follow-up and billing
+  recallEnabled: "1", // automatic follow-up / missed-session reminders
+  recallRepeatDays: "7", // days between reminders for an overdue follow-up
+  recallMaxCount: "3", // stop after this many reminders for one follow-up
+  stalledPlanDays: "14", // started plan with no session for N days = missed session
+  recallInactiveDays: "90", // recall list: no visit for N days
+  feedbackEnabled: "1",
+  feedbackEveryDays: "30", // ask the same patient for feedback at most once every N days
+  receiptHeader: "", // e.g. registered name, TIN, address for the acknowledgement receipt
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
