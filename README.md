@@ -14,7 +14,7 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 2 | Messenger webhook: auto-replies, quick replies, booking flow, human takeover, reminders | **Done** |
 | 3 | Patient intake + pre-consult form, assessment notes, treatment plan + consent, session log | **Done** |
 | 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | **Done** |
-| 5 | Weekly dashboard, Monday email, CSV/Sheets export, audit log screen, optional AI assistant | |
+| 5 | Weekly dashboard, Monday email, CSV export, audit log screen (AI assistant: awaiting owner decision) | **Done** |
 | 6 | Deployment, backup/restore, Taglish SOPs | |
 
 ## Run it locally
@@ -115,3 +115,17 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
 - Reports: daily collections (front desk can see), receivables per patient with 0-30 / 31-60 / 61-90 / 90+ aging, and a monthly report compared with the previous month (Owner/Doctor).
 - Only the Owner can void a payment or charge, with a reason; voids stay visible.
 - Amounts are whole pesos.
+
+## Dashboard, reports & audit (Phase 5)
+
+**Weekly dashboard** (home screen, Owner/Doctor): pick a week or month, compared with the previous one.
+- New inquiries, consultations booked (reschedules not double-counted), patients who attended + no-show rate, patients who started treatment, patients who returned for follow-up, amount collected, outstanding receivables at period end.
+- Last-8-weeks trend of inquiries vs attended.
+- Funnel by source and by campaign: of the inquiries that came in during the period, how many booked, attended, started treatment, and how much they have paid so far, with the conversion % between each stage.
+- Reach (views/likes) is typed in per campaign per week under More → Campaigns and shown in its own box, apart from outcomes.
+
+**Monday email**: the reminders cron sends last week's summary once on Monday from 7 AM to the clinic Gmail (or the address set in More → Reports & exports). Numbers only, no patient names. "Send now" button for testing.
+
+**CSV exports** (`/api/export/<kind>`): dashboard (Owner/Doctor), and leads, appointments, payments, receivables, follow-ups (Owner only). No health information in any export. Excel opens them directly; for Google Sheets use File → Import → Upload. Every export is written to the audit log.
+
+**Audit log** (More → Audit log, Owner): filter by date, user, action and record type; click a record id to see its full history; export to CSV.
