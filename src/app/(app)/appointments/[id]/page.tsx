@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/session";
 import { audit } from "@/lib/audit";
+import { can } from "@/lib/roles";
 import { getOpenSlots } from "@/lib/booking";
 import { APPOINTMENT_STATUSES, appointmentStatusLabel } from "@/lib/constants";
 import { addDays, formatDate, formatDateTime, formatPhp, formatTime, manilaDateString, manilaToUtc, todayManila } from "@/lib/time";
@@ -19,7 +20,7 @@ export default async function AppointmentDetail({
   const user = await requirePermission("booking:read");
   const { id } = await params;
   const sp = await searchParams;
-  const appt = await db.appointment.findUnique({ where: { id }, include: { lead: true, consultationType: true } });
+  const appt = await db.appointment.findUnique({ where: { id }, include: { lead: { include: { patient: { select: { id: true, patientNo: true } } } }, consultationType: true } });
   if (!appt) notFound();
   await audit({ userId: user.id, action: "VIEW", entity: "Appointment", entityId: id });
 
@@ -55,6 +56,14 @@ export default async function AppointmentDetail({
           <div>Booked via: {appt.channel.toLowerCase()}</div>
           <div>Google Calendar: {appt.googleEventId ? "Synced" : "Not synced"}</div>
           {appt.notes && <div>Notes: {appt.notes}</div>}
+          {appt.lead.patient && (
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Link href={`/patients/${appt.lead.patient.id}`} className="btn-secondary">Patient {appt.lead.patient.patientNo}</Link>
+              {can(user.role, "clinical:write") && (
+                <Link href={`/patients/${appt.lead.patient.id}/assessments/new?appointmentId=${appt.id}`} className="btn">Start assessment</Link>
+              )}
+            </div>
+          )}
         </section>
 
         <section className="card space-y-3">

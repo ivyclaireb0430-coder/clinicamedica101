@@ -41,6 +41,10 @@ export const SCRIPTS = [
     body: "Good morning {first_name}! Paalala po: ang inyong consultation ay ngayong araw, {time}, sa Clinica Medica 101, Centuria Medical Makati. Dalhin po ang mga lumang lab results o gamot kung meron. Kita-kits po!",
   },
   {
+    key: "intake_link", category: "Booking", title: "Pre-consult form link",
+    body: "Hi {first_name}! Para mas magamit ang oras ng inyong consultation, paki-sagot po ang maikling pre-consult form na ito (mga 10 minuto): [link] Ang inyong sagot ay makikita lang ng doktor. Salamat po!",
+  },
+  {
     key: "no_show_rebook", category: "Follow-up", title: "Na-miss ang appointment (re-book)",
     body: "Hi {first_name}, napansin po naming hindi kayo nakarating sa appointment ninyo. Sana po ay okay kayo. Gusto n'yo po bang mag-book ng bagong schedule? Sabihin lang po kung anong araw at oras ang pinaka-convenient.",
   },

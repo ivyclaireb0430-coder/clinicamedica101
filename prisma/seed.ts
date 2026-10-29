@@ -1,7 +1,7 @@
 // Fake demo data only. Never put real patient data here.
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { encrypt } from "../src/lib/crypto";
+import { encrypt, encryptJson } from "../src/lib/crypto";
 import { addDays, manilaToUtc, todayManila } from "../src/lib/time";
 import { SCRIPTS } from "./seed-data";
 
@@ -28,7 +28,7 @@ async function main() {
   const ownerPassword = process.env.SEED_OWNER_PASSWORD ?? "ChangeMe-Clinic-2026";
 
   await db.$transaction([
-    db.auditLog.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
+    db.auditLog.deleteMany(), db.treatmentSession.deleteMany(), db.treatmentConsent.deleteMany(), db.treatmentPlanItem.deleteMany(), db.treatmentPlan.deleteMany(), db.attachment.deleteMany(), db.assessment.deleteMany(), db.intakeForm.deleteMany(), db.patient.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
     db.campaign.deleteMany(), db.script.deleteMany(), db.consultationType.deleteMany(), db.scheduleRule.deleteMany(),
     db.blockedDate.deleteMany(), db.externalBusy.deleteMany(), db.googleAccount.deleteMany(), db.user.deleteMany(), db.setting.deleteMany(),
   ]);
@@ -158,6 +158,63 @@ async function main() {
         },
       },
     });
+  }
+
+  // Patients: everyone who attended or went further, with fake clinical records.
+  const attendedLeads = await db.lead.findMany({ where: { stage: { in: ["ATTENDED", "PLAN_ACCEPTED", "FOLLOW_UP"] } }, orderBy: { firstContactAt: "asc" } });
+  const MODALITIES = [["Lifestyle & nutrition counseling", 1500], ["Acupuncture", 1800], ["Therapeutic massage", 1200], ["IV nutrient therapy", 3500]] as const;
+  for (const [i, lead] of attendedLeads.entries()) {
+    const patient = await db.patient.create({
+      data: {
+        patientNo: `CM-${String(i + 1).padStart(4, "0")}`, leadId: lead.id, firstName: lead.firstName, lastName: lead.lastName,
+        birthDate: `19${60 + ((i * 7) % 35)}-0${1 + (i % 9)}-1${i % 9}`, sex: i % 2 ? "MALE" : "FEMALE", mobile: lead.mobile, email: lead.email,
+        address: pick(["Makati City", "Taguig City", "Pasig City", "Quezon City", "Mandaluyong City"]), privacyConsent: true, consentAt: lead.consentAt,
+      },
+    });
+    const appt = await db.appointment.findFirst({ where: { leadId: lead.id, status: "ATTENDED" } });
+    const visit = appt?.startAt ?? lead.lastContactAt;
+    await db.intakeForm.create({
+      data: {
+        token: `demo-intake-${i}`, expiresAt: visit, leadId: lead.id, patientId: patient.id, status: "SUBMITTED", consentGiven: true,
+        consentVersion: "2026-10", submittedAt: new Date(visit.getTime() - 86_400_000),
+        answersEnc: encryptJson({ chiefComplaint: pick(CONCERNS), medications: "Wala", allergies: "Wala", lifestyle: "Kulang sa tulog, mataas ang stress sa trabaho", goals: "Maintindihan ang pinagmumulan ng problema" }),
+      },
+    });
+    await db.assessment.create({
+      data: {
+        patientId: patient.id, appointmentId: appt?.id, date: visit, authorId: owner.id,
+        chiefComplaintEnc: encrypt(pick(CONCERNS)), symptomsEnc: encrypt("[Demo] Fake history for testing only."),
+        examEnc: encrypt("[Demo] BP 120/80, HR 76. Unremarkable exam."), investigationsEnc: encrypt("[Demo] CBC, FBS, lipid profile"),
+        explainedEnc: encrypt("[Demo] Explained possible contributing factors and the next steps."),
+      },
+    });
+    if (lead.stage !== "ATTENDED") {
+      const chosen = [MODALITIES[i % 4], MODALITIES[(i + 1) % 4]];
+      const plan = await db.treatmentPlan.create({
+        data: {
+          patientId: patient.id, title: "Initial plan", status: "STARTED", authorId: owner.id, startedAt: visit,
+          goalsEnc: encrypt("[Demo] Improve sleep and energy; reassess in 4 weeks."), scheduleEnc: encrypt("Once a week for 6 weeks"),
+          benefitsEnc: encrypt("[Demo] May help improve symptoms; results vary."), risksEnc: encrypt("[Demo] Mild soreness, bruising."),
+          alternativesEnc: encrypt("[Demo] Lifestyle changes alone; referral to specialist; no treatment."),
+          items: { create: chosen.map(([modality, price], k) => ({ modality, sessions: k ? 4 : 6, unitPricePhp: price, sortOrder: k })) },
+        },
+      });
+      await db.treatmentConsent.create({
+        data: {
+          planId: plan.id, consentDate: visit.toISOString().slice(0, 10), explainedById: owner.id, explainedByName: owner.name,
+          patientAcknowledged: true, acknowledgement: "Plan, costs, benefits, risks and alternatives explained. Patient agreed.",
+        },
+      });
+      for (let k = 0; k < 2 + (i % 3); k++) {
+        await db.treatmentSession.create({
+          data: {
+            planId: plan.id, patientId: patient.id, authorId: owner.id, modality: chosen[k % 2][0],
+            date: new Date(visit.getTime() + (k + 1) * 7 * 86_400_000).toISOString().slice(0, 10),
+            progressNotesEnc: encrypt(`[Demo] Session ${k + 1}: tolerated well.`),
+          },
+        });
+      }
+    }
   }
 
   console.log(`Seeded demo data. Login: owner@example.com / ${ownerPassword} (you'll be asked to set up 2FA).`);

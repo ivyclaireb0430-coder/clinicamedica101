@@ -92,6 +92,8 @@ model Lead {
   stageChanges    LeadStageChange[]
   appointments    Appointment[]
   conversation    Conversation?
+  patient         Patient?
+  intakeForms     IntakeForm[]
 
   @@index([stage])
 }
@@ -160,6 +162,8 @@ model Appointment {
   googleEventId      String?
   rescheduledFromId  String?
   noShowAutoMarked   Boolean          @default(false)
+  assessments        Assessment[]
+  sessions           TreatmentSession[]
   notes              String? // scheduling notes only — no clinical content
   reminders          Reminder[]
   createdAt          DateTime         @default(now())
@@ -244,4 +248,155 @@ model Reminder {
   createdAt     DateTime    @default(now())
 
   @@unique([appointmentId, kind])
+}
+
+// ───────────── Consultation & treatment (clinical: Owner/Doctor only) ─────────────
+
+model Patient {
+  id               String    @id @default(cuid())
+  patientNo        String    @unique // e.g. CM-0001
+  leadId           String?   @unique
+  lead             Lead?     @relation(fields: [leadId], references: [id])
+  firstName        String
+  lastName         String?
+  birthDate        String? // "YYYY-MM-DD"
+  sex              String? // FEMALE | MALE | OTHER | UNDISCLOSED
+  mobile           String?
+  email            String?
+  address          String?
+  occupation       String?
+  emergencyContact String?
+  privacyConsent   Boolean   @default(false)
+  consentAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  intakeForms      IntakeForm[]
+  assessments      Assessment[]
+  plans            TreatmentPlan[]
+  sessions         TreatmentSession[]
+  attachments      Attachment[]
+
+  @@index([lastName, firstName])
+}
+
+// Pre-consult form. Sent as a one-time link; answers are encrypted as one JSON blob.
+model IntakeForm {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  expiresAt      DateTime
+  leadId         String?
+  lead           Lead?     @relation(fields: [leadId], references: [id])
+  patientId      String?
+  patient        Patient?  @relation(fields: [patientId], references: [id])
+  status         String    @default("SENT") // SENT | SUBMITTED | FILLED_IN_CLINIC
+  answersEnc     String?
+  consentGiven   Boolean   @default(false)
+  consentVersion String?
+  submittedAt    DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model Assessment {
+  id               String       @id @default(cuid())
+  patientId        String
+  patient          Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId    String?
+  appointment      Appointment? @relation(fields: [appointmentId], references: [id])
+  date             DateTime     @default(now())
+  authorId         String
+  chiefComplaintEnc String?
+  symptomsEnc      String?
+  examEnc          String? // exam findings
+  investigationsEnc String? // investigations requested
+  resultsEnc       String? // results / interpretation
+  explainedEnc     String? // findings explained to patient
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  attachments      Attachment[]
+
+  @@index([patientId, date])
+}
+
+// Uploaded files are encrypted on disk (UPLOAD_DIR). Names are encrypted too.
+model Attachment {
+  id           String      @id @default(cuid())
+  patientId    String
+  patient      Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  assessmentId String?
+  assessment   Assessment? @relation(fields: [assessmentId], references: [id])
+  kind         String // RESULT | CONSENT_FORM | OTHER
+  filenameEnc  String
+  mimeType     String
+  size         Int
+  storageKey   String      @unique
+  uploadedById String
+  createdAt    DateTime    @default(now())
+
+  consents     TreatmentConsent[]
+}
+
+model TreatmentPlan {
+  id              String    @id @default(cuid())
+  patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  title           String // short label, e.g. "Plan 1 – Nov 2026" (no diagnosis)
+  status          String    @default("DRAFT") // DRAFT | PROPOSED | ACCEPTED | STARTED | COMPLETED | DECLINED | CANCELLED
+  goalsEnc        String?
+  scheduleEnc     String? // e.g. weekly for 8 weeks
+  benefitsEnc     String?
+  risksEnc        String?
+  alternativesEnc String?
+  declineReason   String?
+  authorId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  startedAt       DateTime?
+
+  items           TreatmentPlanItem[]
+  consent         TreatmentConsent?
+  sessions        TreatmentSession[]
+}
+
+model TreatmentPlanItem {
+  id           String        @id @default(cuid())
+  planId       String
+  plan         TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  modality     String
+  sessions     Int
+  unitPricePhp Int
+  notes        String?
+  sortOrder    Int           @default(0)
+}
+
+model TreatmentConsent {
+  id                   String        @id @default(cuid())
+  planId               String        @unique
+  plan                 TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  consentDate          String // "YYYY-MM-DD"
+  explainedById        String
+  explainedByName      String
+  patientAcknowledged  Boolean
+  acknowledgement      String // what the patient acknowledged
+  signedFormId         String?
+  signedForm           Attachment?   @relation(fields: [signedFormId], references: [id])
+  createdAt            DateTime      @default(now())
+}
+
+model TreatmentSession {
+  id               String        @id @default(cuid())
+  planId           String
+  plan             TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  patientId        String
+  patient          Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId    String?
+  appointment      Appointment?  @relation(fields: [appointmentId], references: [id])
+  date             String // "YYYY-MM-DD"
+  modality         String
+  progressNotesEnc String?
+  authorId         String
+  createdAt        DateTime      @default(now())
+
+  @@index([patientId, date])
 }
