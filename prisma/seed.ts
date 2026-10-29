@@ -2,7 +2,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { encrypt, encryptJson } from "../src/lib/crypto";
-import { addDays, manilaToUtc, todayManila } from "../src/lib/time";
+import { addDays, manilaToUtc, startOfWeek, todayManila } from "../src/lib/time";
 import { SCRIPTS } from "./seed-data";
 
 const db = new PrismaClient();
@@ -28,7 +28,7 @@ async function main() {
   const ownerPassword = process.env.SEED_OWNER_PASSWORD ?? "ChangeMe-Clinic-2026";
 
   await db.$transaction([
-    db.auditLog.deleteMany(), db.packageUse.deleteMany(), db.payment.deleteMany(), db.charge.deleteMany(), db.patientPackage.deleteMany(), db.feedback.deleteMany(), db.progressEntry.deleteMany(), db.followUp.deleteMany(), db.treatmentSession.deleteMany(), db.treatmentConsent.deleteMany(), db.treatmentPlanItem.deleteMany(), db.treatmentPlan.deleteMany(), db.attachment.deleteMany(), db.assessment.deleteMany(), db.intakeForm.deleteMany(), db.patient.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
+    db.auditLog.deleteMany(), db.campaignStat.deleteMany(), db.packageUse.deleteMany(), db.payment.deleteMany(), db.charge.deleteMany(), db.patientPackage.deleteMany(), db.feedback.deleteMany(), db.progressEntry.deleteMany(), db.followUp.deleteMany(), db.treatmentSession.deleteMany(), db.treatmentConsent.deleteMany(), db.treatmentPlanItem.deleteMany(), db.treatmentPlan.deleteMany(), db.attachment.deleteMany(), db.assessment.deleteMany(), db.intakeForm.deleteMany(), db.patient.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
     db.campaign.deleteMany(), db.script.deleteMany(), db.consultationType.deleteMany(), db.scheduleRule.deleteMany(),
     db.blockedDate.deleteMany(), db.externalBusy.deleteMany(), db.googleAccount.deleteMany(), db.user.deleteMany(), db.setting.deleteMany(),
   ]);
@@ -219,6 +219,16 @@ async function main() {
   }
 
   await seedFollowUpAndBilling(owner.id, today);
+
+  // Manually entered reach (views/likes) for the last 8 weeks.
+  for (let w = 0; w < 8; w++) {
+    const weekStart = startOfWeek(addDays(today, -7 * w));
+    for (const [k, c] of campaigns.slice(0, 2).entries()) {
+      await db.campaignStat.create({
+        data: { campaignId: c.id, weekStart, views: (k ? 900 : 4200) + Math.floor(rand() * 1500), likes: (k ? 20 : 160) + Math.floor(rand() * 80) },
+      });
+    }
+  }
 
   console.log(`Seeded demo data. Login: owner@example.com / ${ownerPassword} (you'll be asked to set up 2FA).`);
   console.log(`Front desk demo: frontdesk@example.com / ${ownerPassword}`);

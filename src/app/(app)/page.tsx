@@ -6,15 +6,20 @@ import { needsFollowUp } from "@/lib/pipeline";
 import { getNumberSetting } from "@/lib/settings";
 import { addDays, formatDate, formatTime, manilaToUtc, startOfWeek, todayManila } from "@/lib/time";
 import { PageHeader, StatusBadge } from "@/components/ui";
+import { can } from "@/lib/roles";
+import { periodFor } from "@/lib/dashboard";
+import { Dashboard } from "./Dashboard";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ denied?: string; period?: string; date?: string }> }) {
   const user = await requireUser();
-  const { denied } = await searchParams;
+  const { denied, period: kind, date } = await searchParams;
+  const showDashboard = can(user.role, "reports:read");
+  const period = periodFor(kind === "month" ? "month" : "week", date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : todayManila());
   const today = todayManila();
   const weekStart = startOfWeek(today);
   const now = new Date();
 
-  const [todays, openLeads, newThisWeek, bookedThisWeek, counts, followUpDays] = await Promise.all([
+  const [todays, openLeads, newThisWeek, followUpsDue, counts, followUpDays] = await Promise.all([
     db.appointment.findMany({
       where: { startAt: { gte: manilaToUtc(today, "00:00"), lt: manilaToUtc(addDays(today, 1), "00:00") }, status: { notIn: ["CANCELLED", "RESCHEDULED"] } },
       orderBy: { startAt: "asc" },
@@ -22,7 +27,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
     }),
     db.lead.findMany({ where: { stage: { in: ["NEW", "REPLIED", "FEE_EXPLAINED"] } }, select: { stage: true, lastContactAt: true } }),
     db.lead.count({ where: { firstContactAt: { gte: manilaToUtc(weekStart, "00:00") } } }),
-    db.appointment.count({ where: { createdAt: { gte: manilaToUtc(weekStart, "00:00") } } }),
+    db.followUp.count({ where: { status: "OPEN", dueDate: { lte: today } } }),
     db.lead.groupBy({ by: ["stage"], _count: true }),
     getNumberSetting("followUpDays"),
   ]);
@@ -36,8 +41,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Today's appointments" value={todays.length} href={`/calendar?date=${today}`} />
         <Stat label="Needs follow-up" value={followUps} href="/leads/follow-up" highlight={followUps > 0} />
+        <Stat label="Follow-ups due" value={followUpsDue} href="/followups" highlight={followUpsDue > 0} />
         <Stat label="New inquiries this week" value={newThisWeek} href="/leads?stage=NEW" />
-        <Stat label="Bookings made this week" value={bookedThisWeek} href={`/calendar?date=${today}&view=week`} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -70,9 +75,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
               </li>
             ))}
           </ul>
-          <p className="muted mt-3">Full weekly dashboard with conversion rates comes in Phase 5.</p>
         </section>
       </div>
+
+      {showDashboard && (
+        <div className="mt-8">
+          <h1 className="mb-3">Weekly dashboard</h1>
+          <Dashboard period={period} />
+        </div>
+      )}
     </>
   );
 }

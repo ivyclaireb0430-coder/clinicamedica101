@@ -13,6 +13,7 @@ import { isRole } from "@/lib/roles";
 import { pullFromGoogle } from "@/lib/google";
 import { createReminderTemplate } from "@/lib/messenger/meta";
 import { setSetting } from "@/lib/settings";
+import { sendWeeklySummary } from "@/lib/weekly";
 
 const time = z.string().regex(/^\d{2}:\d{2}$/);
 
@@ -184,4 +185,35 @@ export async function saveFollowUpSettings(formData: FormData) {
   await setSetting("receiptHeader", d.receiptHeader.trim());
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "follow-up & billing" });
   redirect("/settings/followup?saved=1");
+}
+
+export async function saveCampaignStat(campaignId: string, weekStart: string, formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const d = z
+    .object({ views: z.coerce.number().int().min(0).max(1e9), likes: z.coerce.number().int().min(0).max(1e9) })
+    .parse({ views: formData.get("views") || 0, likes: formData.get("likes") || 0 });
+  await db.campaignStat.upsert({
+    where: { campaignId_weekStart: { campaignId, weekStart } },
+    create: { campaignId, weekStart, ...d },
+    update: d,
+  });
+  await audit({ userId: user.id, action: "UPDATE", entity: "Campaign", entityId: campaignId, detail: `reach ${weekStart}` });
+  redirect(`/settings/campaigns?week=${weekStart}&saved=1`);
+}
+
+export async function saveWeeklyEmailSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  await setSetting("weeklyEmailEnabled", formData.get("weeklyEmailEnabled") === "on" ? "1" : "0");
+  const to = String(formData.get("weeklyEmailTo") ?? "").trim();
+  if (to && !z.string().email().safeParse(to).success) redirect("/settings/exports?error=email");
+  await setSetting("weeklyEmailTo", to);
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "weekly email" });
+  redirect("/settings/exports?saved=1");
+}
+
+export async function sendWeeklyEmailNow() {
+  const user = await requirePermission("settings:manage");
+  const r = await sendWeeklySummary();
+  await audit({ userId: user.id, action: "SEND", entity: "Report", detail: `weekly summary ${r.ok ? "sent" : "failed"}` });
+  redirect(`/settings/exports?sent=${r.ok ? "1" : encodeURIComponent(r.error ?? "failed")}`);
 }

@@ -20,6 +20,10 @@ export const SETTING_DEFAULTS = {
   feedbackEnabled: "1",
   feedbackEveryDays: "30", // ask the same patient for feedback at most once every N days
   receiptHeader: "", // e.g. registered name, TIN, address for the acknowledgement receipt
+  // Phase 5: Monday summary email
+  weeklyEmailEnabled: "1",
+  weeklyEmailTo: "", // blank = the connected Google account / owner email
+  lastWeeklyEmailWeek: "", // Monday of the last week already emailed
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

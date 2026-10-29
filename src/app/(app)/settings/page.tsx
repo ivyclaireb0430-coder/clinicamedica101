@@ -10,6 +10,8 @@ export default async function SettingsPage() {
   const sections = [
     { href: "/followups", title: "Follow-up", desc: "Due follow-ups, missed sessions, recall list, feedback", show: can(user.role, "booking:read") },
     { href: "/billing", title: "Billing", desc: "Daily collections, receivables, monthly report", show: can(user.role, "billing:read") },
+    { href: "/settings/exports", title: "Reports & exports", desc: "Monday summary email, CSV downloads", show: can(user.role, "reports:read") },
+    { href: "/settings/audit", title: "Audit log", desc: "Who viewed or changed patient records", show: can(user.role, "audit:read") },
     { href: "/settings/followup", title: "Follow-up & billing settings", desc: "Recall timing, feedback requests, receipt header", show: can(user.role, "settings:manage") },
     { href: "/settings/schedule", title: "Schedule, fees & closed dates", desc: "Clinic hours, consultation types, blocked dates", show: can(user.role, "booking:write") },
     { href: "/settings/messenger", title: "Messenger & reminders", desc: "Auto-replies, reminders, SMS, takeover", show: can(user.role, "settings:manage") },

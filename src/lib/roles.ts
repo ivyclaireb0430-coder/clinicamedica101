@@ -23,13 +23,14 @@ export type Permission =
   | "billing:write"
   | "billing:void" // void a payment or charge
   | "reports:read" // receivables aging and monthly performance
-  | "feedback:read"; // patient feedback comments can mention health details
+  | "feedback:read" // patient feedback comments can mention health details
+  | "data:export"; // download lists with personal data as CSV
 
 const MATRIX: Record<Role, Permission[]> = {
   OWNER: [
     "leads:read", "leads:write", "lead_concern:read", "clinical:read", "clinical:write",
     "booking:read", "booking:write", "scripts:write", "settings:manage", "users:manage", "audit:read",
-    "billing:read", "billing:write", "billing:void", "reports:read", "feedback:read",
+    "billing:read", "billing:write", "billing:void", "reports:read", "feedback:read", "data:export",
   ],
   DOCTOR: [
     "leads:read", "leads:write", "lead_concern:read", "clinical:read", "clinical:write",
