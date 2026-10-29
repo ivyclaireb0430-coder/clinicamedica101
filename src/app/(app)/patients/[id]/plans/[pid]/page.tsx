@@ -8,6 +8,8 @@ import { planStatusLabel, planTotal, totalSessions } from "@/lib/clinical";
 import { formatDate, formatPhp, todayManila } from "@/lib/time";
 import { BackLink, PageHeader } from "@/components/ui";
 import { PlanForm } from "../../../PlanForm";
+import { can } from "@/lib/roles";
+import { packageActive, packageRemaining } from "@/lib/billing";
 import { addSession, recordConsent, savePlan, setPlanStatus } from "../../../actions";
 
 const NEXT_ACTIONS: Record<string, { to: string; label: string; style?: string }[]> = {
@@ -37,6 +39,12 @@ export default async function PlanPage({ params, searchParams }: {
   if (!plan || plan.patientId !== id) notFound();
   await audit({ userId: user.id, action: "VIEW", entity: "TreatmentPlan", entityId: pid });
   const editable = ["DRAFT", "PROPOSED", "DECLINED"].includes(plan.status);
+  const billingOk = can(user.role, "billing:write");
+  const packages = billingOk ? await db.patientPackage.findMany({ where: { patientId: id }, include: { uses: true } }) : [];
+  const activePackages = packages.filter((p) => packageActive(p));
+  const progressBySession = new Map(
+    (await db.progressEntry.findMany({ where: { sessionId: { in: plan.sessions.map((s) => s.id) } } })).map((e) => [e.sessionId, e.score]),
+  );
   const done = plan.sessions.length;
   const planned = totalSessions(plan.items);
 
@@ -120,13 +128,45 @@ export default async function PlanPage({ params, searchParams }: {
                 ))}
               </select>
               <textarea className="input sm:col-span-4" name="progressNotes" rows={3} placeholder="Progress notes for this visit" />
+              <label className="sm:col-span-2">
+                <span className="label">Main complaint today (0 = worst, 10 = best)</span>
+                <select className="input" name="score" defaultValue="">
+                  <option value="">Not rated</option>
+                  {Array.from({ length: 11 }, (_, n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+              <label className="sm:col-span-2">
+                <span className="label">Next follow-up date (optional)</span>
+                <input className="input" name="nextDate" type="date" />
+              </label>
+              {billingOk && (
+                <>
+                  <label className="sm:col-span-2">
+                    <span className="label">Billing</span>
+                    <select className="input" name="billing" defaultValue={activePackages.length ? `package:${activePackages[0].id}` : "charge"}>
+                      <option value="charge">Charge this session</option>
+                      {activePackages.map((p) => (
+                        <option key={p.id} value={`package:${p.id}`}>Use package: {p.name} ({packageRemaining(p)} left)</option>
+                      ))}
+                      <option value="none">No charge</option>
+                    </select>
+                  </label>
+                  <label className="sm:col-span-2">
+                    <span className="label">Session charge (blank = plan price)</span>
+                    <input className="input" name="chargeAmount" type="number" min={1} step={1} placeholder="₱" />
+                  </label>
+                </>
+              )}
               <button className="btn sm:col-span-1">Log session</button>
             </form>
           )}
           <ul className="space-y-2 text-sm">
             {plan.sessions.map((s, i) => (
               <li key={s.id} className="rounded border border-slate-100 p-2">
-                <div className="font-medium">#{plan.sessions.length - i} · {s.date} · {s.modality}</div>
+                <div className="font-medium">
+                  #{plan.sessions.length - i} · {s.date} · {s.modality}
+                  {progressBySession.has(s.id) && <span className="badge ml-2">{progressBySession.get(s.id)}/10</span>}
+                </div>
                 <p className="whitespace-pre-wrap text-slate-700">{decryptOptional(s.progressNotesEnc) ?? "—"}</p>
               </li>
             ))}

@@ -166,3 +166,22 @@ export async function setupReminderTemplate() {
   await audit({ userId: user.id, action: "CREATE", entity: "MessageTemplate", detail: name });
   redirect("/settings/messenger?template=1");
 }
+
+export async function saveFollowUpSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const n = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
+  const d = z
+    .object({
+      recallRepeatDays: n(1, 60), recallMaxCount: n(1, 10), stalledPlanDays: n(3, 120),
+      recallInactiveDays: n(14, 730), feedbackEveryDays: n(1, 365), receiptHeader: z.string().max(400),
+    })
+    .parse(Object.fromEntries(formData));
+  await setSetting("recallEnabled", formData.get("recallEnabled") === "on" ? "1" : "0");
+  await setSetting("feedbackEnabled", formData.get("feedbackEnabled") === "on" ? "1" : "0");
+  for (const key of ["recallRepeatDays", "recallMaxCount", "stalledPlanDays", "recallInactiveDays", "feedbackEveryDays"] as const) {
+    await setSetting(key, String(d[key]));
+  }
+  await setSetting("receiptHeader", d.receiptHeader.trim());
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "follow-up & billing" });
+  redirect("/settings/followup?saved=1");
+}

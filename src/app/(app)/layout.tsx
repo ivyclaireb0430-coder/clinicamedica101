@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <Nav userName={user.name} inboxCount={can(user.role, "lead_concern:read") ? await db.conversation.count({ where: { needsDoctor: true } }) : null} />
-      <main className="px-4 pb-24 pt-4 md:pb-8 md:pl-60 md:pr-8 md:pt-8">
+      <main className="px-4 pb-24 pt-4 md:pb-8 md:pl-60 md:pr-8 md:pt-8 print:p-0">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>

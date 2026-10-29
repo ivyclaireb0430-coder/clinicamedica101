@@ -2,10 +2,7 @@ import { db } from "./db";
 import { getNumberSetting, getSetting } from "./settings";
 import { renderScript } from "./scripts";
 import { formatDate, formatTime, manilaDateString, manilaTimeString, addDays } from "./time";
-import { sendGmail } from "./google";
-import { sendSms, smsEnabled } from "./sms";
-import { sendText, sendUtilityTemplate, withinWindow } from "./messenger/meta";
-import { storeOutgoing } from "./messenger/handler";
+import { scriptBody, sendToContact } from "./outreach";
 import { audit } from "./audit";
 
 export type ReminderKind = "CONFIRMATION" | "DAY_BEFORE" | "DAY_OF" | "NO_SHOW";
@@ -47,38 +44,17 @@ export function dueReminderKinds(
   return due;
 }
 
-/** Pick a channel and send. Messenger inside 24h → Messenger utility template → email → SMS (if turned on). */
+/** Send one appointment reminder through the channel chain in outreach.ts. */
 export async function sendAppointmentMessage(appt: Appt, kind: ReminderKind, now = new Date()) {
-  const scriptRow = await db.script.findUnique({ where: { key: SCRIPT_FOR[kind] } });
   const values = { first_name: appt.lead.firstName, date: formatDate(appt.startAt), time: formatTime(appt.startAt) };
-  const text = renderScript(scriptRow?.body ?? "Paalala po ng inyong appointment sa {date}, {time}.", values);
-  const convo = appt.lead.conversation;
-  const errors: string[] = [];
-
-  if (convo && withinWindow(convo.lastUserMessageAt, now)) {
-    const r = await sendText(convo.psid, { text });
-    await storeOutgoing(convo.id, text, "BOT", r);
-    if (!r.error) return { channel: "MESSENGER", ok: true };
-    errors.push(r.error);
-  }
-  const template = await getSetting("utilityTemplateName");
-  if (convo && template && kind !== "NO_SHOW") {
-    const r = await sendUtilityTemplate(convo.psid, template, await getSetting("utilityTemplateLanguage"), [values.first_name, values.date, values.time]);
-    await storeOutgoing(convo.id, `[Reminder template] ${text}`, "BOT", r);
-    if (!r.error) return { channel: "MESSENGER_UTILITY", ok: true };
-    errors.push(r.error);
-  }
-  if (appt.lead.email) {
-    const r = await sendGmail(appt.lead.email, "Clinica Medica 101: inyong appointment", `${text}\n\nClinica Medica 101\nCenturia Medical Makati`);
-    if (r.ok) return { channel: "EMAIL", ok: true };
-    errors.push(r.error ?? "email failed");
-  }
-  if (appt.lead.mobile && (await smsEnabled())) {
-    const r = await sendSms(appt.lead.mobile, `Clinica Medica 101: ${text}`);
-    if (r.ok) return { channel: "SMS", ok: true };
-    errors.push(r.error ?? "sms failed");
-  }
-  return { channel: errors.length ? "FAILED" : "NONE", ok: false, error: errors.join("; ") || "No channel available" };
+  const body = (await scriptBody(SCRIPT_FOR[kind])) || "Paalala po ng inyong appointment sa {date}, {time}.";
+  const text = renderScript(body, values);
+  return sendToContact(appt.lead, text, {
+    subject: "Clinica Medica 101: inyong appointment",
+    // Utility templates are for appointment updates only, not the no-show re-booking message.
+    templateParams: kind === "NO_SHOW" ? undefined : [values.first_name, values.date, values.time],
+    now,
+  });
 }
 
 const apptInclude = {

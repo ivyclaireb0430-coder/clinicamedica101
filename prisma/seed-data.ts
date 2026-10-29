@@ -53,6 +53,26 @@ export const SCRIPTS = [
     body: "Hi {first_name}! Kumusta na po? Nag-message lang po ako para i-check kung may tanong pa kayo tungkol sa consultation. Nandito lang po kami kung handa na kayong mag-schedule.",
   },
   {
+    key: "follow_up_due", category: "Follow-up", title: "Paalala: malapit na ang follow-up",
+    body: "Hi {first_name}! Paalala lang po mula sa Clinica Medica 101 na naka-schedule po ang inyong follow-up sa {date}. Wala pa po kayong naka-book na oras. Reply lang po kayo dito o tumawag para makapili ng schedule na convenient sa inyo.",
+  },
+  {
+    key: "recall_overdue", category: "Follow-up", title: "Lampas na sa follow-up date",
+    body: "Hi {first_name}, kumusta na po kayo? Lampas na po ang inyong follow-up date ({date}). Para masubaybayan ng doktor ang inyong progress, puwede po tayong mag-schedule ngayong linggo. Sabihin lang po kung anong araw ang okay sa inyo.",
+  },
+  {
+    key: "missed_session", category: "Follow-up", title: "Na-miss ang treatment session",
+    body: "Hi {first_name}! Napansin po naming matagal-tagal na mula sa huli ninyong session. Sana po ay okay kayo. Gusto n'yo po bang mag-book ng susunod na session para tuloy-tuloy ang inyong plano? Kung may tanong o alalahanin, nandito lang po kami.",
+  },
+  {
+    key: "recall_inactive", category: "Follow-up", title: "Recall: matagal nang hindi bumibisita",
+    body: "Hi {first_name}! Matagal-tagal na rin po mula sa huli ninyong pagbisita sa Clinica Medica 101. Kumusta na po ang pakiramdam ninyo? Kung gusto n'yo pong magpa-check-up o mag-follow-up, puwede po kaming mag-schedule para sa inyo.",
+  },
+  {
+    key: "feedback_request", category: "Follow-up", title: "Hingi ng feedback pagkatapos ng visit",
+    body: "Hi {first_name}! Salamat po sa pagbisita sa Clinica Medica 101. Malaking tulong po sa amin kung masasagot ninyo ang maikling feedback form (1 minuto lang po): [link]. Salamat po!",
+  },
+  {
     key: "doctor_handoff", category: "Unang reply", title: "Ipapasa sa doktor (medical na tanong)",
     body: "Salamat po sa pagbahagi, {first_name}. Para masagot ito nang tama at ligtas, ipapasa ko po ito sa doktor at siya mismo ang sasagot. Kung emergency po ito (hal. hirap huminga, matinding pananakit ng dibdib), pumunta po agad sa pinakamalapit na ER.",
   },

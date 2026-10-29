@@ -28,7 +28,7 @@ async function main() {
   const ownerPassword = process.env.SEED_OWNER_PASSWORD ?? "ChangeMe-Clinic-2026";
 
   await db.$transaction([
-    db.auditLog.deleteMany(), db.treatmentSession.deleteMany(), db.treatmentConsent.deleteMany(), db.treatmentPlanItem.deleteMany(), db.treatmentPlan.deleteMany(), db.attachment.deleteMany(), db.assessment.deleteMany(), db.intakeForm.deleteMany(), db.patient.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
+    db.auditLog.deleteMany(), db.packageUse.deleteMany(), db.payment.deleteMany(), db.charge.deleteMany(), db.patientPackage.deleteMany(), db.feedback.deleteMany(), db.progressEntry.deleteMany(), db.followUp.deleteMany(), db.treatmentSession.deleteMany(), db.treatmentConsent.deleteMany(), db.treatmentPlanItem.deleteMany(), db.treatmentPlan.deleteMany(), db.attachment.deleteMany(), db.assessment.deleteMany(), db.intakeForm.deleteMany(), db.patient.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
     db.campaign.deleteMany(), db.script.deleteMany(), db.consultationType.deleteMany(), db.scheduleRule.deleteMany(),
     db.blockedDate.deleteMany(), db.externalBusy.deleteMany(), db.googleAccount.deleteMany(), db.user.deleteMany(), db.setting.deleteMany(),
   ]);
@@ -206,6 +206,7 @@ async function main() {
         },
       });
       for (let k = 0; k < 2 + (i % 3); k++) {
+        if (new Date(visit.getTime() + (k + 1) * 7 * 86_400_000).toISOString().slice(0, 10) > today) break;
         await db.treatmentSession.create({
           data: {
             planId: plan.id, patientId: patient.id, authorId: owner.id, modality: chosen[k % 2][0],
@@ -217,8 +218,161 @@ async function main() {
     }
   }
 
+  await seedFollowUpAndBilling(owner.id, today);
+
   console.log(`Seeded demo data. Login: owner@example.com / ${ownerPassword} (you'll be asked to set up 2FA).`);
   console.log(`Front desk demo: frontdesk@example.com / ${ownerPassword}`);
+}
+
+// Phase 4: payments, packages, progress ratings, follow-ups and feedback for the demo patients.
+async function seedFollowUpAndBilling(ownerId: string, today: string) {
+  const METHODS = ["CASH", "GCASH", "CASH", "MAYA", "CARD", "GCASH"];
+  let receipt = 0;
+  const pay = (patientId: string, date: string, amountPhp: number, k: number) => {
+    const method = METHODS[k % METHODS.length];
+    return db.payment.create({
+      data: {
+        patientId, date, amountPhp, method, receivedById: ownerId,
+        receiptNo: `AR-${date.slice(0, 4)}-${String(++receipt).padStart(5, "0")}`,
+        reference: method === "CASH" ? null : `${method === "CARD" ? "APPR" : "REF"}${100000 + Math.floor(rand() * 899999)}`,
+        orNumber: k % 3 === 0 ? `${5000 + receipt}` : null,
+      },
+    });
+  };
+  const COMMENTS = [
+    "Ang tagal po ng consultation pero sulit, naintindihan ko na ang lab results ko.",
+    "Very accommodating ang doctor, hindi minadali ang paliwanag.",
+    "Medyo matagal ang paghintay sa parking pero okay naman ang clinic.",
+    "Salamat po, malinaw ang plano at alam ko ang gastos bago magsimula.",
+    "Maayos po, sana may Saturday afternoon slot.",
+  ];
+
+  const patients = await db.patient.findMany({
+    orderBy: { patientNo: "asc" },
+    include: {
+      lead: { include: { appointments: { where: { status: "ATTENDED" }, include: { consultationType: true }, orderBy: { startAt: "asc" } } } },
+      plans: { include: { items: true, sessions: { orderBy: { date: "asc" } } } },
+    },
+  });
+
+  for (const [i, p] of patients.entries()) {
+    const appt = p.lead?.appointments[0];
+    const visitDate = appt ? appt.startAt.toISOString().slice(0, 10) : p.createdAt.toISOString().slice(0, 10);
+
+    // Consultation charge; most paid in full, some partial, a few unpaid.
+    if (appt) {
+      const fee = appt.consultationType.feePhp;
+      await db.charge.create({ data: { patientId: p.id, date: visitDate, category: "CONSULTATION", description: appt.consultationType.name, amountPhp: fee, appointmentId: appt.id, createdById: ownerId } });
+      if (i % 7 === 3) await pay(p.id, visitDate, Math.round(fee / 2), i);
+      else if (i % 7 !== 5) await pay(p.id, visitDate, fee, i);
+    }
+
+    // Older unpaid balances so the receivables aging has something in each bucket.
+    if (i % 6 === 2) {
+      const daysAgo = [40, 75, 120][(i / 6) % 3 | 0];
+      await db.charge.create({ data: { patientId: p.id, date: addDays(today, -daysAgo), category: "OTHER", description: "Laboratory processing fee", amountPhp: 1800, createdById: ownerId } });
+    }
+
+    const plan = p.plans[0];
+    if (plan) {
+      // Half the plan patients bought a prepaid package; the rest pay per session.
+      const usePackage = i % 2 === 0;
+      const pkg = usePackage
+        ? await db.patientPackage.create({
+            data: {
+              patientId: p.id, name: `${plan.items[0].modality} 6-session package`, sessionsTotal: 6,
+              pricePhp: Math.round(plan.items[0].unitPricePhp * 6 * 0.9), purchasedOn: visitDate, createdById: ownerId,
+              charge: { create: { patientId: p.id, date: visitDate, category: "PACKAGE", description: `${plan.items[0].modality} 6-session package (6 sessions)`, amountPhp: Math.round(plan.items[0].unitPricePhp * 6 * 0.9), createdById: ownerId } },
+            },
+          })
+        : null;
+      if (pkg) await pay(p.id, visitDate, pkg.pricePhp, i + 1);
+
+      for (const [k, s] of plan.sessions.entries()) {
+        const item = plan.items.find((it) => it.modality === s.modality) ?? plan.items[0];
+        if (pkg && s.modality === plan.items[0].modality) {
+          await db.packageUse.create({ data: { packageId: pkg.id, sessionId: s.id, date: s.date } });
+        } else {
+          await db.charge.create({ data: { patientId: p.id, date: s.date, category: "SESSION", description: `Treatment session – ${s.modality}`, amountPhp: item.unitPricePhp, sessionId: s.id, createdById: ownerId } });
+          if ((i + k) % 5 !== 0) await pay(p.id, s.date, item.unitPricePhp, i + k);
+        }
+        await db.progressEntry.create({
+          data: { patientId: p.id, sessionId: s.id, date: s.date, score: Math.min(10, 3 + k * 2 + Math.floor(rand() * 2)), authorId: ownerId },
+        });
+      }
+      // Baseline rating at the first visit.
+      await db.progressEntry.create({ data: { patientId: p.id, date: visitDate, score: 2 + (i % 3), notesEnc: encrypt("[Demo] Baseline at first consult."), authorId: ownerId } });
+
+      const last = plan.sessions[plan.sessions.length - 1]?.date ?? visitDate;
+      const due = i % 4 === 1 ? addDays(today, -5) : addDays(last, 7); // one overdue for the demo
+      await db.followUp.create({
+        data: {
+          patientId: p.id, dueDate: due, kind: "NEXT_SESSION", createdById: ownerId,
+          ...(due < today ? { recallCount: 1, lastRecallAt: manilaToUtc(due, "10:00"), lastRecallChannel: "MESSENGER" } : {}),
+        },
+      });
+    } else if (appt) {
+      await db.followUp.create({ data: { patientId: p.id, dueDate: addDays(visitDate, 30), kind: "REASSESSMENT", note: "Review labs", createdById: ownerId } });
+      await db.progressEntry.create({ data: { patientId: p.id, date: visitDate, score: 3 + (i % 4), authorId: ownerId } });
+    }
+
+    // Feedback after the first visit.
+    if (appt && i % 4 !== 1) {
+      const answered = i % 5 !== 4;
+      const consent = answered && i % 3 === 0;
+      await db.feedback.create({
+        data: {
+          token: `demo-feedback-${i}`, patientId: p.id, appointmentId: appt.id, sentChannel: "MESSENGER",
+          expiresAt: answered ? new Date(appt.startAt.getTime() + 14 * 86_400_000) : new Date(Date.now() + 10 * 86_400_000),
+          ...(answered
+            ? {
+                submittedAt: new Date(appt.startAt.getTime() + 26 * 3_600_000), rating: i % 7 === 2 ? 3 : i % 2 ? 4 : 5,
+                commentEnc: encrypt(COMMENTS[i % COMMENTS.length]), testimonialConsent: consent,
+                displayName: consent ? `${p.firstName} ${p.lastName?.[0] ?? ""}.` : null, consentVersion: consent ? "2026-10" : null,
+              }
+            : {}),
+        },
+      });
+    }
+  }
+
+  // Earlier patients (before the system): inactive ones for the recall list, a stalled plan, and old balances.
+  const LEGACY = [
+    { first: "Lorna", last: "Dizon", lastVisitAgo: 130, owe: [{ ago: 130, amt: 2500 }], status: "COMPLETED" },
+    { first: "Edgar", last: "Salazar", lastVisitAgo: 95, owe: [{ ago: 95, amt: 1800 }, { ago: 70, amt: 1200 }], status: "COMPLETED" },
+    { first: "Pia", last: "Manalo", lastVisitAgo: 21, owe: [{ ago: 45, amt: 1500 }], status: "STARTED" },
+  ];
+  for (const [k, l] of LEGACY.entries()) {
+    const p = await db.patient.create({
+      data: {
+        patientNo: `CM-${String(patients.length + k + 1).padStart(4, "0")}`, firstName: l.first, lastName: l.last,
+        mobile: `0917${String(5550000 + k)}`, privacyConsent: true, consentAt: manilaToUtc(addDays(today, -l.lastVisitAgo - 30), "10:00"),
+        createdAt: manilaToUtc(addDays(today, -l.lastVisitAgo - 30), "10:00"),
+      },
+    });
+    const plan = await db.treatmentPlan.create({
+      data: {
+        patientId: p.id, title: "Plan 1", status: l.status, authorId: ownerId, startedAt: manilaToUtc(addDays(today, -l.lastVisitAgo - 21), "10:00"),
+        items: { create: [{ modality: "Acupuncture", sessions: 4, unitPricePhp: 1800, sortOrder: 0 }] },
+        consent: { create: { consentDate: addDays(today, -l.lastVisitAgo - 21), explainedById: ownerId, explainedByName: "Demo Doctor", patientAcknowledged: true, acknowledgement: "Explained and agreed." } },
+      },
+    });
+    for (let n = 3; n >= 0; n--) {
+      const date = addDays(today, -l.lastVisitAgo - n * 7);
+      const sess = await db.treatmentSession.create({ data: { planId: plan.id, patientId: p.id, date, modality: "Acupuncture", authorId: ownerId } });
+      await db.progressEntry.create({ data: { patientId: p.id, sessionId: sess.id, date, score: 4 + (3 - n), authorId: ownerId } });
+    }
+    for (const o of l.owe) {
+      await db.charge.create({ data: { patientId: p.id, date: addDays(today, -o.ago), category: "SESSION", description: "Treatment session – Acupuncture", amountPhp: o.amt, createdById: ownerId } });
+    }
+  }
+
+  // A few walk-in payments today so Daily collections has something to show.
+  const recent = patients.slice(-3);
+  for (const [k, p] of recent.entries()) {
+    await db.charge.create({ data: { patientId: p.id, date: today, category: "OTHER", description: "Supplements (clinic-dispensed)", amountPhp: 950 + k * 300, createdById: ownerId } });
+    await pay(p.id, today, 950 + k * 300, k + 1);
+  }
 }
 
 main().finally(() => db.$disconnect());

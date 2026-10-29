@@ -1,9 +1,10 @@
 import { db } from "./db";
 import { openSlots, overlaps, type Interval } from "./slots";
-import { addDays, manilaToUtc } from "./time";
+import { addDays, manilaDateString, manilaToUtc } from "./time";
 import { ACTIVE_APPOINTMENT_STATUSES, LEAD_STAGE_KEYS, type AppointmentStatus } from "./constants";
 import { pushAppointment } from "./google";
 import { audit } from "./audit";
+import { closeFollowUpsForVisit } from "./visits";
 
 async function busyBetween(from: Date, to: Date, excludeAppointmentId?: string): Promise<Interval[]> {
   const [appts, external] = await Promise.all([
@@ -78,7 +79,11 @@ export async function createAppointment(input: {
 
 export async function setAppointmentStatus(id: string, status: AppointmentStatus, userId?: string | null) {
   const appt = await db.appointment.update({ where: { id }, data: { status } });
-  if (status === "ATTENDED") await advanceLeadStage(appt.leadId, "ATTENDED", userId);
+  if (status === "ATTENDED") {
+    await advanceLeadStage(appt.leadId, "ATTENDED", userId);
+    const patient = await db.patient.findUnique({ where: { leadId: appt.leadId }, select: { id: true } });
+    if (patient) await closeFollowUpsForVisit(patient.id, manilaDateString(appt.startAt));
+  }
   await audit({ userId, action: "UPDATE", entity: "Appointment", entityId: id, detail: `status=${status}` });
   await pushAppointment(id);
   return appt;
