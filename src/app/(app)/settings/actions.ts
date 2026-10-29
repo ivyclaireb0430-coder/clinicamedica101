@@ -11,6 +11,7 @@ import { requirePermission } from "@/lib/session";
 import { audit } from "@/lib/audit";
 import { isRole } from "@/lib/roles";
 import { pullFromGoogle } from "@/lib/google";
+import { createReminderTemplate } from "@/lib/messenger/meta";
 import { setSetting } from "@/lib/settings";
 
 const time = z.string().regex(/^\d{2}:\d{2}$/);
@@ -140,4 +141,28 @@ export async function createCampaign(formData: FormData) {
   await db.campaign.create({ data: { ...data, trackingCode: data.trackingCode.toLowerCase(), startDate: new Date() } });
   await audit({ userId: user.id, action: "CREATE", entity: "Campaign" });
   revalidatePath("/settings/campaigns");
+}
+
+export async function saveMessengerSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const flag = (k: string) => (formData.get(k) === "on" ? "1" : "0");
+  await setSetting("automationEnabled", flag("automationEnabled"));
+  await setSetting("remindersEnabled", flag("remindersEnabled"));
+  await setSetting("smsEnabled", flag("smsEnabled"));
+  const hours = z.coerce.number().int().min(1).max(48).parse(formData.get("autoNoShowHours"));
+  await setSetting("autoNoShowHours", String(hours));
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "messenger settings" });
+  redirect("/settings/messenger?saved=1");
+}
+
+export async function setupReminderTemplate() {
+  const user = await requirePermission("settings:manage");
+  const name = "cm101_appointment_reminder";
+  const language = "en_US";
+  const result = await createReminderTemplate(name, language);
+  if ("error" in result && result.error) redirect(`/settings/messenger?template_error=${encodeURIComponent(result.error)}`);
+  await setSetting("utilityTemplateName", name);
+  await setSetting("utilityTemplateLanguage", language);
+  await audit({ userId: user.id, action: "CREATE", entity: "MessageTemplate", detail: name });
+  redirect("/settings/messenger?template=1");
 }

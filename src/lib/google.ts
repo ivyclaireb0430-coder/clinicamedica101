@@ -10,6 +10,7 @@ const SCOPES = [
   "email",
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/gmail.send", // reminders and doctor notifications from the clinic Gmail
 ];
 const CAL_API = "https://www.googleapis.com/calendar/v3";
 const APP_TAG = "cm101AppointmentId";
@@ -74,7 +75,7 @@ async function getAccount() {
   return db.googleAccount.findFirst({ where: { user: { role: "OWNER" } }, orderBy: { createdAt: "asc" } });
 }
 
-async function accessToken(): Promise<{ token: string; calendarId: string } | null> {
+export async function accessToken(): Promise<{ token: string; calendarId: string } | null> {
   const account = await getAccount();
   if (!account || !googleConfigured()) return null;
   if (account.expiresAt.getTime() - 60_000 > Date.now()) {
@@ -220,4 +221,30 @@ export async function pullFromGoogle(): Promise<{ busy: number; updated: number 
   await db.externalBusy.deleteMany({ where: { googleEventId: { notIn: busyIds } } });
   await db.googleAccount.updateMany({ data: { lastSyncAt: new Date() } });
   return { busy: busyIds.length, updated };
+}
+
+/** Send a plain-text email from the connected clinic Gmail. Returns false if Google isn't connected. */
+export async function sendGmail(to: string, subject: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  const auth = await accessToken().catch(() => null);
+  if (!auth) return { ok: false, error: "Google is not connected" };
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject, "utf8").toString("base64")}?=`;
+  const raw = Buffer.from(
+    [`To: ${to}`, `Subject: ${encodedSubject}`, "MIME-Version: 1.0", "Content-Type: text/plain; charset=UTF-8", "", text].join("\r\n"),
+    "utf8",
+  ).toString("base64url");
+  const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${auth.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw }),
+  }).catch(() => null);
+  if (!res) return { ok: false, error: "Gmail network error" };
+  return res.ok ? { ok: true } : { ok: false, error: `Gmail ${res.status}` };
+}
+
+/** The address the clinic system sends doctor notifications to. */
+export async function doctorEmail(): Promise<string | null> {
+  const account = await getAccount();
+  if (account?.email) return account.email;
+  const owner = await db.user.findFirst({ where: { role: "OWNER", active: true }, orderBy: { createdAt: "asc" } });
+  return owner?.email ?? null;
 }

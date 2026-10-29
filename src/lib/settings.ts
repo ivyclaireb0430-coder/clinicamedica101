@@ -4,6 +4,13 @@ export const SETTING_DEFAULTS = {
   followUpDays: "3", // leads with no booking after N days go to "Needs follow-up"
   clinicName: "Clinica Medica 101 Center for Complementary Medicine",
   clinicAddress: "Centuria Medical Makati, Kalayaan Ave cor. Salamanca St, Makati City",
+  automationEnabled: "1", // Messenger auto-replies on/off
+  remindersEnabled: "1",
+  smsEnabled: "1", // owner approved SMS; only sends once SEMAPHORE_API_KEY is set
+  utilityTemplateName: "", // approved Messenger UTILITY template for reminders outside 24h
+  utilityTemplateLanguage: "en_US",
+  autoNoShowHours: "3", // hours after the appointment ends before it is auto-marked No-show
+  lastDoctorNotifyAt: "",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

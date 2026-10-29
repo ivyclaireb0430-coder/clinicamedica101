@@ -24,6 +24,7 @@ export const authConfig = {
       const { pathname } = request.nextUrl;
       const isPublic =
         pathname.startsWith("/login") ||
+        pathname.startsWith("/privacy") ||
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/api/cron") ||
         pathname.startsWith("/api/webhooks");

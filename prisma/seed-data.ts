@@ -37,6 +37,10 @@ export const SCRIPTS = [
     body: "Hi {first_name}! Paalala lang po: may consultation kayo bukas, {date}, {time}. Paki-reply ng OK para i-confirm, o RESCHED kung kailangang palitan.",
   },
   {
+    key: "reminder_day_of", category: "Booking", title: "Reminder (sa mismong araw)",
+    body: "Good morning {first_name}! Paalala po: ang inyong consultation ay ngayong araw, {time}, sa Clinica Medica 101, Centuria Medical Makati. Dalhin po ang mga lumang lab results o gamot kung meron. Kita-kits po!",
+  },
+  {
     key: "no_show_rebook", category: "Follow-up", title: "Na-miss ang appointment (re-book)",
     body: "Hi {first_name}, napansin po naming hindi kayo nakarating sa appointment ninyo. Sana po ay okay kayo. Gusto n'yo po bang mag-book ng bagong schedule? Sabihin lang po kung anong araw at oras ang pinaka-convenient.",
   },

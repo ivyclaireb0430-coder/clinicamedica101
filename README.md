@@ -11,7 +11,7 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | --- | --- | --- |
 | 0 | Plan: data model, screens, Meta/Google setup | Done |
 | 1 | Login + roles + 2FA, leads pipeline, saved Taglish scripts, booking calendar, Google Calendar sync | **Done** |
-| 2 | Messenger webhook: auto-replies, quick replies, booking flow, human takeover, reminders | Next |
+| 2 | Messenger webhook: auto-replies, quick replies, booking flow, human takeover, reminders | **Done** |
 | 3 | Patient intake + pre-consult form, assessment notes, treatment plan + consent, session log | |
 | 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | |
 | 5 | Weekly dashboard, Monday email, CSV/Sheets export, audit log screen, optional AI assistant | |
@@ -57,3 +57,22 @@ Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (OAuth client, redirect URI `{AP
 then Settings → Google Calendar → Connect. Bookings push to Google immediately. Your own Google events
 block those times from booking, and clinic events moved/deleted in Google update the appointment.
 In production, call `GET /api/cron/google-sync` with header `Authorization: Bearer $CRON_SECRET` every 10–15 minutes.
+
+## Messenger automation (Phase 2)
+
+- Webhook: `{APP_URL}/api/webhooks/messenger` (verify token = `META_VERIFY_TOKEN`; every POST is checked against
+  `X-Hub-Signature-256` with `META_APP_SECRET`). Subscribe the Page to `messages`, `messaging_postbacks`,
+  `messaging_referrals`, `message_echoes`.
+- New conversations create a lead automatically. `m.me/<page>?ref=<tracking code>` links tag the lead's campaign.
+- Quick-reply menu: Paano ang consult?, Magkano ang fee?, Available schedule, Location, Mag-book, Kausapin ang doktor
+  (Messenger caps button titles at 20 characters).
+- Booking flow: privacy consent → consultation type → open slot → full name → mobile → booked + confirmation.
+- Anything that looks medical or that the bot doesn't understand is never answered: the patient gets a safe hand-off
+  reply, the conversation goes to **Inbox → Needs doctor reply**, and the doctor gets an email (no patient details).
+- Human takeover: replying from the clinic inbox, or from the Facebook Page inbox, pauses the bot for that conversation.
+- Reminders (`GET /api/cron/reminders` every 15 min with the cron secret): confirmation, day before, day of, plus
+  automatic no-show detection and a re-booking message. Channel order: Messenger within 24h → Messenger utility
+  template → email (clinic Gmail) → SMS (Semaphore, when `SEMAPHORE_API_KEY` is set). No messages between 8pm and 8am.
+- Meta retired the CONFIRMED_EVENT_UPDATE tag on Feb 10, 2026. Reminders outside 24h use a UTILITY template
+  (Settings → Messenger → "Create template on Meta"; needs the `page_utility_messaging` permission).
+- Message text is encrypted at rest. Front desk cannot open Messenger conversations (they may contain health details).

@@ -28,7 +28,7 @@ async function main() {
   const ownerPassword = process.env.SEED_OWNER_PASSWORD ?? "ChangeMe-Clinic-2026";
 
   await db.$transaction([
-    db.auditLog.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
+    db.auditLog.deleteMany(), db.reminder.deleteMany(), db.message.deleteMany(), db.conversation.deleteMany(), db.appointment.deleteMany(), db.leadStageChange.deleteMany(), db.lead.deleteMany(),
     db.campaign.deleteMany(), db.script.deleteMany(), db.consultationType.deleteMany(), db.scheduleRule.deleteMany(),
     db.blockedDate.deleteMany(), db.externalBusy.deleteMany(), db.googleAccount.deleteMany(), db.user.deleteMany(), db.setting.deleteMany(),
   ]);
@@ -135,6 +135,29 @@ async function main() {
     });
     await db.lead.update({ where: { id: l.id }, data: { stage: "BOOKED" } });
     await db.leadStageChange.create({ data: { leadId: l.id, fromStage: "REPLIED", toStage: "BOOKED", userId: owner.id } });
+  }
+
+  // Demo Messenger conversations (fake).
+  const messengerLeads = await db.lead.findMany({ where: { psid: { not: null } }, orderBy: { lastContactAt: "desc" }, take: 6 });
+  const demoThreads: [string, string, string][][] = [
+    [["IN", "PATIENT", "Hi po, magkano po consultation?"], ["OUT", "BOT", "Ang consultation fee po ay ₱2,500. Kasama na po dito ang mahabang one-on-one na assessment…"], ["IN", "PATIENT", "Doc, may sakit po ako sa tiyan tuwing gabi, ano po dapat inumin?"], ["OUT", "BOT", "Salamat po sa pagbahagi. Para masagot ito nang tama at ligtas, ipapasa ko po ito sa doktor…"]],
+    [["IN", "PATIENT", "Hello"], ["OUT", "BOT", "Hi! Salamat sa pag-message sa Clinica Medica 101…"], ["IN", "PATIENT", "Mag-book"], ["OUT", "BOT", "Pumili po ng oras na pinaka-convenient sa inyo:"]],
+    [["IN", "PATIENT", "Saan po kayo?"], ["OUT", "BOT", "Nasa Centuria Medical Makati po kami…"]],
+  ];
+  for (const [i, lead] of messengerLeads.entries()) {
+    const thread = demoThreads[i % demoThreads.length];
+    const last = new Date(Date.now() - (i + 1) * 3 * 3_600_000);
+    await db.conversation.create({
+      data: {
+        leadId: lead.id, psid: lead.psid!, needsDoctor: i === 0, needsDoctorAt: i === 0 ? last : null,
+        automationPaused: i === 2, pausedAt: i === 2 ? last : null, lastUserMessageAt: last, lastMessageAt: last, unread: i < 2 ? 1 : 0,
+        messages: {
+          create: thread.map(([direction, sender, text], k) => ({
+            direction, sender, textEnc: encrypt(text), createdAt: new Date(last.getTime() - (thread.length - k) * 60_000),
+          })),
+        },
+      },
+    });
   }
 
   console.log(`Seeded demo data. Login: owner@example.com / ${ownerPassword} (you'll be asked to set up 2FA).`);
