@@ -8,10 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma db push && tsx prisma/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "db:reset": "prisma migrate deploy && tsx prisma/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:new": "prisma migrate dev",
+    "create-owner": "tsx scripts/create-owner.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

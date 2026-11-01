@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PrivacyBox } from "@/components/PrivacyBox";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/session";
@@ -17,11 +18,11 @@ export default async function LeadDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; erase?: string }>;
 }) {
   const user = await requirePermission("leads:read");
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, erase } = await searchParams;
   const lead = await db.lead.findUnique({
     where: { id },
     include: {
@@ -152,6 +153,11 @@ export default async function LeadDetail({
             ))}
           </ul>
         </section>
+        {can(user.role, "data:export") && !lead.patient && (
+          <div className="md:col-span-2">
+            <PrivacyBox leadId={id} confirmWord="ERASE" showConfirmError={erase === "confirm"} />
+          </div>
+        )}
       </div>
     </>
   );

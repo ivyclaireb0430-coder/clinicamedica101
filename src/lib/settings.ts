@@ -24,6 +24,9 @@ export const SETTING_DEFAULTS = {
   weeklyEmailEnabled: "1",
   weeklyEmailTo: "", // blank = the connected Google account / owner email
   lastWeeklyEmailWeek: "", // Monday of the last week already emailed
+  // Phase 6: retention policy (records past these ages are listed for review, never deleted automatically)
+  retentionPatientYears: "10", // after the last visit
+  retentionLeadMonths: "24", // inquiries that never became patients, after last contact
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

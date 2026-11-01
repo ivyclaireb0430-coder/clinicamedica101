@@ -14,6 +14,7 @@ import { pullFromGoogle } from "@/lib/google";
 import { createReminderTemplate } from "@/lib/messenger/meta";
 import { setSetting } from "@/lib/settings";
 import { sendWeeklySummary } from "@/lib/weekly";
+import { erasePerson } from "@/lib/privacy";
 
 const time = z.string().regex(/^\d{2}:\d{2}$/);
 
@@ -216,4 +217,26 @@ export async function sendWeeklyEmailNow() {
   const r = await sendWeeklySummary();
   await audit({ userId: user.id, action: "SEND", entity: "Report", detail: `weekly summary ${r.ok ? "sent" : "failed"}` });
   redirect(`/settings/exports?sent=${r.ok ? "1" : encodeURIComponent(r.error ?? "failed")}`);
+}
+
+export async function erasePersonAction(target: { leadId?: string; patientId?: string; confirmWord: string }, formData: FormData) {
+  const user = await requirePermission("data:export");
+  const back = target.patientId ? `/patients/${target.patientId}` : `/leads/${target.leadId}`;
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== target.confirmWord.toUpperCase() || !reason) {
+    redirect(`${back}?erase=confirm`);
+  }
+  const { ref } = await erasePerson(target, user.id, reason);
+  redirect(`/settings/privacy?erased=${encodeURIComponent(ref)}`);
+}
+
+export async function saveRetentionSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const d = z
+    .object({ retentionPatientYears: z.coerce.number().int().min(1).max(50), retentionLeadMonths: z.coerce.number().int().min(1).max(120) })
+    .parse(Object.fromEntries(formData));
+  await setSetting("retentionPatientYears", String(d.retentionPatientYears));
+  await setSetting("retentionLeadMonths", String(d.retentionLeadMonths));
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "retention" });
+  redirect("/settings/privacy?saved=1");
 }

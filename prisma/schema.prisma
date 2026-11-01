@@ -1,5 +1,5 @@
 // Clinica Medica 101 — data model.
-// Dev uses SQLite. For production switch provider to "postgresql" (see docs/DEPLOY.md).
+// PostgreSQL in development and production (docker-compose.yml runs one locally).
 // Fields ending in "Enc" are AES-256-GCM encrypted by src/lib/crypto.ts before saving.
 
 generator client {
@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

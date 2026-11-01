@@ -11,6 +11,7 @@ import { formatDate, formatDateTime, formatPhp } from "@/lib/time";
 import { BackLink, StatusBadge } from "@/components/ui";
 import { createIntakeLink } from "../actions";
 import { BillingTab } from "./BillingTab";
+import { PrivacyBox } from "@/components/PrivacyBox";
 import { FollowUpTab } from "./FollowUpTab";
 import { ProgressTab } from "./ProgressTab";
 
@@ -40,7 +41,7 @@ function age(birthDate: string | null) {
   return a;
 }
 
-export default async function PatientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; intake?: string; saved?: string; paid?: string; error?: string; sent?: string }> }) {
+export default async function PatientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; intake?: string; saved?: string; paid?: string; error?: string; sent?: string; erase?: string }> }) {
   const user = await requirePermission("leads:read");
   const { id } = await params;
   const sp = await searchParams;
@@ -151,6 +152,11 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
               {!patient.lead?.appointments.length && <li className="muted">None.</li>}
             </ul>
           </section>
+          {can(user.role, "data:export") && (
+            <div className="md:col-span-2">
+              <PrivacyBox patientId={id} confirmWord={patient.patientNo} showConfirmError={sp.erase === "confirm"} />
+            </div>
+          )}
         </div>
       )}
 
