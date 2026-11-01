@@ -19,7 +19,7 @@ export default async function LeadsPage({
     ...(!board && isLeadStage(stage) ? { stage } : {}),
     ...(!board && !isLeadStage(stage) ? { stage: { not: "LOST" } } : {}),
     ...(search
-      ? { OR: [{ firstName: { contains: search } }, { lastName: { contains: search } }, { mobile: { contains: search } }] }
+      ? { OR: [{ firstName: { contains: search, mode: "insensitive" as const } }, { lastName: { contains: search, mode: "insensitive" as const } }, { mobile: { contains: search, mode: "insensitive" as const } }] }
       : {}),
   };
 

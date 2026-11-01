@@ -29,6 +29,7 @@ export const authConfig = {
         pathname.startsWith("/feedback/") ||
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/api/cron") ||
+        pathname === "/api/health" ||
         pathname.startsWith("/api/webhooks");
       if (isPublic) return true;
       // Owner 2FA enforcement happens in the (app) layout, which reads the user fresh from the database.

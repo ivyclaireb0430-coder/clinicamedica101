@@ -15,19 +15,22 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 3 | Patient intake + pre-consult form, assessment notes, treatment plan + consent, session log | **Done** |
 | 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | **Done** |
 | 5 | Weekly dashboard, Monday email, CSV export, audit log screen (AI assistant: awaiting owner decision) | **Done** |
-| 6 | Deployment, backup/restore, Taglish SOPs | |
+| 6 | PostgreSQL, deployment (VPS + HTTPS), backup/restore, privacy tools, Taglish SOPs | **Done** |
 
 ## Run it locally
 
-Requires Node.js 20+.
+Requires Node.js 20+ and Docker (for the local PostgreSQL database).
 
 ```bash
 npm install
 cp .env.example .env      # then fill AUTH_SECRET, ENCRYPTION_KEY, CRON_SECRET (see comments in the file)
-npm run db:push           # create the local SQLite database
-npm run db:seed           # load FAKE demo data (wipes the local database)
+docker compose up -d db   # local PostgreSQL on 127.0.0.1:5432
+npm run db:reset          # apply migrations + load FAKE demo data (wipes the local database)
 npm run dev               # http://localhost:3000
 ```
+
+Schema changes: edit `prisma/schema.prisma`, then `npm run db:migrate:new -- --name what_changed` and commit the
+new folder in `prisma/migrations/`. Production applies them with `npm run db:migrate` during `deploy/update.sh`.
 
 Demo logins (fake data only): `owner@example.com` and `frontdesk@example.com`, password `ChangeMe-Clinic-2026`
 (override with `SEED_OWNER_PASSWORD`). The owner is asked to set up 2FA with an authenticator app on first login.
@@ -39,7 +42,7 @@ npm run typecheck
 
 ## Tech
 
-Next.js 15 (App Router) + TypeScript, Tailwind CSS, Prisma (SQLite in dev, PostgreSQL in production),
+Next.js 15 (App Router) + TypeScript, Tailwind CSS, Prisma + PostgreSQL (migrations),
 Auth.js credentials + TOTP 2FA, bcrypt. Timezone Asia/Manila, currency PHP.
 
 ## Privacy and security (Data Privacy Act, RA 10173)
@@ -129,3 +132,17 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
 **CSV exports** (`/api/export/<kind>`): dashboard (Owner/Doctor), and leads, appointments, payments, receivables, follow-ups (Owner only). No health information in any export. Excel opens them directly; for Google Sheets use File → Import → Upload. Every export is written to the audit log.
 
 **Audit log** (More → Audit log, Owner): filter by date, user, action and record type; click a record id to see its full history; export to CSV.
+
+## Deployment & operations (Phase 6)
+
+- **Guide (Taglish):** [docs/DEPLOY.md](docs/DEPLOY.md). DigitalOcean Singapore 2 GB droplet, Ubuntu 24.04, GoDaddy A
+  record `app` → server IP, served at `https://app.clinicamedica101.org`.
+- `deploy/setup-server.sh <domain>`: one-time server setup (Node 22, PostgreSQL, Caddy with automatic HTTPS, systemd
+  service, timers for reminders/Google sync/daily backup, firewall, fail2ban, automatic security updates). Generates
+  all secrets into `/etc/clinic/clinic.env` (never in git). Safe to re-run.
+- `deploy/update.sh`: backup, pull `main`, migrate, build, restart, health check.
+- `deploy/backup.sh` / `deploy/restore.sh`: encrypted database + uploads backup (30 days kept, optional rclone off-site copy).
+- The app refuses to start in production if a required secret is missing or weak. `GET /api/health` checks the database.
+- **Privacy tools:** More → Privacy & data (access export, erasure with receipts kept anonymously, retention review,
+  breach checklist). Full breach steps: [docs/BREACH-RESPONSE.md](docs/BREACH-RESPONSE.md).
+- **SOPs (Taglish):** [docs/sops/](docs/sops/README.md), one per module.

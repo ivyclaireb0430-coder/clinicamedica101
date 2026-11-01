@@ -10,7 +10,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   const search = q?.trim();
   const patients = await db.patient.findMany({
     where: search
-      ? { OR: [{ firstName: { contains: search } }, { lastName: { contains: search } }, { patientNo: { contains: search } }, { mobile: { contains: search } }] }
+      ? { OR: [{ firstName: { contains: search, mode: "insensitive" as const } }, { lastName: { contains: search, mode: "insensitive" as const } }, { patientNo: { contains: search, mode: "insensitive" as const } }, { mobile: { contains: search, mode: "insensitive" as const } }] }
       : {},
     orderBy: { updatedAt: "desc" },
     take: 200,
