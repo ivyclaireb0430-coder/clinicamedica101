@@ -43,7 +43,7 @@ export const SETTING_DEFAULTS = {
     "Mahabang consultation, hindi minamadali\nPlano na swak sa inyong kondisyon at budget\nMay follow-up para masubaybayan ang progress ninyo\nNasa Makati, malapit sa Kalayaan Ave",
   landingFaq:
     "Magkano ang consultation? | ₱1,000 ang initial consultation at follow-up. ₱800 para sa Senior Citizens at PWD (dalhin lang ang ID). Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
-  landingCta: "Magpa-schedule ng consultation",
+  landingCta: "Mag-book ng consultation ngayon",
   landingDoctorName: "Dr. Irene Lim",
   landingDoctorTitle: "Doctor, Clinica Medica 101 Center for Integrative Medicine",
   landingDoctorBio:

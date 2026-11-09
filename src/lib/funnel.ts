@@ -73,6 +73,19 @@ export const landingInquirySchema = z.object({
   preferredTime: z.enum(PREFERRED_TIMES.map((t) => t.key) as [string, ...string[]]).default("ANY"),
   contactMethod: z.enum(CONTACT_METHODS.map((t) => t.key) as [string, ...string[]]).default("CALL"),
   promoInterest: z.literal("on").optional(),
+  // Self-booking: ISO start time of the chosen slot, or empty for "call me instead".
+  slotStart: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return undefined;
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "slot" });
+        return undefined;
+      }
+      return d;
+    }),
   consent: z.literal("on", { errorMap: () => ({ message: "Kailangan ang pahintulot sa Privacy Notice para makapag-inquire" }) }),
 });
 
@@ -82,6 +95,8 @@ const ERRORS: Record<string, { tl: string; en: string }> = {
   firstName: { tl: "Pakilagay ang pangalan.", en: "Please enter your first name." },
   mobile: { tl: "Pakilagay ang tamang mobile number (hal. 0917 123 4567).", en: "Please enter a valid PH mobile number (e.g. 0917 123 4567)." },
   email: { tl: "Mali ang email.", en: "Please check your email address." },
+  slotStart: { tl: "Pakipili ulit ng oras.", en: "Please choose a time again." },
+  taken: { tl: "Pasensya na, may nakakuha na ng oras na iyan. Pakipili ng ibang oras.", en: "Sorry, that time was just taken. Please choose another time." },
   consent: { tl: "Kailangan ang pahintulot sa Privacy Notice para makapag-inquire.", en: "Please agree to the Privacy Notice so we can contact you." },
   rate: { tl: "Masyadong maraming submission. Pakisubukan ulit mamaya o mag-message sa amin sa Facebook.", en: "Too many submissions. Please try again later or message us on Facebook." },
 };
@@ -101,6 +116,15 @@ export function inquiryNote(
   const method = CONTACT_METHODS.find((t) => t.key === i.contactMethod)?.label ?? i.contactMethod;
   const promo = i.promoInterest && promoName ? ` Interesado sa ${promoName} promo.` : "";
   return `Web form${campaignName ? ` (${campaignName})` : ""}: gusto ng schedule ${time.toLowerCase()}, contact via ${method}.${promo}`;
+}
+
+/** At most `max` items, evenly spread from first to last (keeps morning and afternoon choices). */
+export function spreadSlots<T>(items: T[], max: number): T[] {
+  if (items.length <= max) return items;
+  if (max <= 1) return items.slice(0, max);
+  const picked = new Set<number>();
+  for (let i = 0; i < max; i++) picked.add(Math.round((i * (items.length - 1)) / (max - 1)));
+  return [...picked].sort((a, b) => a - b).map((i) => items[i]);
 }
 
 /**

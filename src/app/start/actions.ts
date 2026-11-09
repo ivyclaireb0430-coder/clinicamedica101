@@ -3,7 +3,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createRateLimiter, inquiryErrorMessage, landingInquirySchema } from "@/lib/funnel";
-import { campaignByCode, notifyWebInquiry, saveWebInquiry } from "@/lib/funnel-db";
+import { campaignByCode, isOpenSlot, notifyWebInquiry, saveWebInquiry, webBookingType } from "@/lib/funnel-db";
+import { SlotTakenError, createAppointment } from "@/lib/booking";
 import { isLandingPage, pageLang, pagePath } from "@/lib/landing-content";
 import { getSetting } from "@/lib/settings";
 
@@ -31,8 +32,24 @@ export async function submitLandingInquiry(code: string | null, pageIdRaw: strin
 
   const parsed = landingInquirySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) back(inquiryErrorMessage(String(parsed.error.issues[0]?.path[0] ?? ""), lang));
+  const data = parsed.data!;
+
+  // Self-booking: check the slot before saving anything, then book it right after the lead is saved.
+  const type = data.slotStart ? await webBookingType() : null;
+  if (data.slotStart && (!type || !(await isOpenSlot(type.id, data.slotStart)))) back(inquiryErrorMessage("taken", lang));
+
   const campaign = await campaignByCode(safeCode);
-  await saveWebInquiry(parsed.data!, campaign, pageId);
+  const lead = await saveWebInquiry(data, campaign, pageId);
+  let booked: Date | null = null;
+  if (data.slotStart && type) {
+    try {
+      await createAppointment({ leadId: lead.id, consultationTypeId: type.id, startAt: data.slotStart, channel: "WEBSITE", notes: "Booked online from the landing page" });
+      booked = data.slotStart;
+    } catch (err) {
+      if (err instanceof SlotTakenError) back(inquiryErrorMessage("taken", lang));
+      throw err;
+    }
+  }
   await notifyWebInquiry().catch(() => undefined);
-  redirect(thanks);
+  redirect(booked ? `/start/salamat?${qs({ from: pageId, booked: booked.toISOString() })}` : thanks);
 }

@@ -164,4 +164,7 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
   `/start/vector-scan`, `/start/vector-scan/en`, `/start/consultation`, `/start/consultation/en`.
   Prices, doctor and fee notes come from settings and consultation types. Visits and inquiries are counted per page
   (More → Landing page) and each lead records which page it came from.
+- Online booking: the form lists open times for the first active consultation type (next 14 days, from the schedule,
+  blocked dates, existing appointments and Google Calendar). Picking a time books it immediately (channel WEBSITE,
+  lead moves to Booked, pushed to Google Calendar); the slot is re-checked on submit. "Call me instead" stays available.
 - Testimonials shown are only feedback with the patient's testimonial consent, 4–5 stars, and not hidden.

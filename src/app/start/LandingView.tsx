@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { getSetting, type SettingKey } from "@/lib/settings";
 import { formatPhp } from "@/lib/time";
 import { CONTACT_METHODS, PREFERRED_TIMES, campaignCodeFrom } from "@/lib/funnel";
-import { campaignByCode, publicTestimonials, recordLandingVisit } from "@/lib/funnel-db";
+import { bookableDays, campaignByCode, publicTestimonials, recordLandingVisit, webBookingType } from "@/lib/funnel-db";
+import { SlotPicker } from "./SlotPicker";
 import { UI, pageLang, type FunnelCopy, type LandingPageId } from "@/lib/landing-content";
 import { submitLandingInquiry } from "./actions";
 
@@ -98,9 +99,11 @@ export async function LandingView({
   // Count the visit, but not a reload after a form error.
   if (!error) await recordLandingVisit(campaign?.id ?? null, pageId).catch(() => undefined);
 
-  const [types, testimonials] = await Promise.all([
+  const bookingType = await webBookingType();
+  const [types, testimonials, days] = await Promise.all([
     base.landingShowFees === "1" ? db.consultationType.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }) : [],
     base.landingShowTestimonials === "1" ? publicTestimonials() : [],
+    bookingType ? bookableDays(bookingType.id) : [],
   ]);
   const messenger = messengerLink(code);
   const action = submitLandingInquiry.bind(null, campaign?.trackingCode ?? null, pageId);
@@ -291,9 +294,11 @@ export async function LandingView({
                 <li className="flex gap-2">{Icon.pin("h-5 w-5 shrink-0 text-cm-green")} {base.clinicAddress}</li>
               </ul>
             </div>
-            <div className="rounded-3xl bg-white p-5 shadow-2xl sm:p-7">
+            <div className="min-w-0 rounded-3xl bg-white p-5 shadow-2xl sm:p-7">
               {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
               <form action={action} className="space-y-4">
+                <SlotPicker days={days} lang={lang} labels={{ title: t.pickTitle, help: t.pickHelp, callMe: t.callMe, none: t.noSlots }} />
+                <p className="pt-1 text-base font-bold text-cm-navy">{t.detailsTitle}</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label><span className="label">{t.firstName}</span><input className="input" name="firstName" required maxLength={80} autoComplete="given-name" /></label>
                   <label><span className="label">{t.lastName}</span><input className="input" name="lastName" maxLength={80} autoComplete="family-name" /></label>
@@ -333,7 +338,7 @@ export async function LandingView({
                     <Link href="/privacy" className="font-medium text-cm-blue underline" target="_blank">{t.privacy}</Link>.
                   </span>
                 </label>
-                <button className={`${redBtn} w-full`}>{t.submit} {Icon.arrow()}</button>
+                <button className={`${redBtn} w-full`}>{days.length ? t.submitBook : t.submit} {Icon.arrow()}</button>
               </form>
             </div>
           </div>
