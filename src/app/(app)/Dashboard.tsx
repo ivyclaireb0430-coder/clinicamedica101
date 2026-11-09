@@ -28,13 +28,14 @@ const pctText = (n: number | null) => (n === null ? "—" : `${n}%`);
 
 function FunnelTable({ title, rows, total }: { title: string; rows: FunnelRow[]; total?: FunnelRow }) {
   const all = total ? [...rows, total] : rows;
+  const showVisits = rows.some((r) => (r.visits ?? 0) > 0);
   return (
     <section className="card overflow-x-auto">
       <h2 className="mb-2">{title}</h2>
       <table className="w-full min-w-[560px] text-sm">
         <thead className="text-left text-xs text-slate-500">
           <tr>
-            <th className="py-1">Source</th><th className="text-right">Inquiries</th><th className="text-right">Booked</th>
+            <th className="py-1">Source</th>{showVisits && <th className="text-right">Page visits</th>}<th className="text-right">Inquiries</th><th className="text-right">Booked</th>
             <th className="text-right">Attended</th><th className="text-right">Treatment</th><th className="text-right">Revenue</th>
           </tr>
         </thead>
@@ -42,6 +43,7 @@ function FunnelTable({ title, rows, total }: { title: string; rows: FunnelRow[];
           {all.map((r) => (
             <tr key={r.key} className={`border-t border-slate-100 ${r.key === "TOTAL" ? "font-semibold" : ""}`}>
               <td className="py-1.5 pr-2">{r.label}</td>
+              {showVisits && <td className="text-right">{r.visits ? r.visits : r.key === "TOTAL" ? "" : "—"}</td>}
               <td className="text-right">{r.inquiries}</td>
               <td className="text-right">{r.booked} <span className="muted text-xs">{pctText(rate(r.booked, r.inquiries))}</span></td>
               <td className="text-right">{r.attended} <span className="muted text-xs">{pctText(rate(r.attended, r.booked))}</span></td>
@@ -52,7 +54,7 @@ function FunnelTable({ title, rows, total }: { title: string; rows: FunnelRow[];
           {rows.length === 0 && <tr><td colSpan={6} className="muted py-2">Walang bagong inquiry sa period na ito.</td></tr>}
         </tbody>
       </table>
-      <p className="muted mt-2 text-xs">Small % = conversion from the previous column. Counts the inquiries that came in during this period and what they did after, up to today.</p>
+      <p className="muted mt-2 text-xs">{showVisits && "Page visits = landing page (/start) views; inquiries also include Messenger and other channels. "}Small % = conversion from the previous column. Counts the inquiries that came in during this period and what they did after, up to today.</p>
     </section>
   );
 }

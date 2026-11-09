@@ -27,6 +27,20 @@ export const SETTING_DEFAULTS = {
   // Phase 6: retention policy (records past these ages are listed for review, never deleted automatically)
   retentionPatientYears: "10", // after the last visit
   retentionLeadMonths: "24", // inquiries that never became patients, after last contact
+  // Sales funnel: public landing page at /start (placeholder text; the owner edits it in Settings → Landing page)
+  landingEnabled: "1",
+  landingHeadline: "Matagal na bang may iniinda? Hanapin natin ang ugat, hindi lang ang sintomas.",
+  landingSubheadline:
+    "Complementary medicine consultation sa Centuria Medical Makati. Isang doktor na makikinig sa buong kwento ninyo at gagawa ng plano para sa inyo.",
+  landingOffer: "", // e.g. "₱500 off sa first consultation ngayong buwan" (shown as a highlighted banner when set)
+  landingBenefits:
+    "Mahabang consultation, hindi minamadali\nPlano na swak sa inyong kondisyon at budget\nMay follow-up para masubaybayan ang progress ninyo\nNasa Makati, malapit sa Kalayaan Ave",
+  landingFaq:
+    "Magkano ang consultation? | Makikita ninyo ang fee sa ibaba. Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
+  landingCta: "Mag-inquire / Magpa-schedule",
+  landingShowFees: "1", // list active consultation types and fees
+  landingShowTestimonials: "1", // feedback with testimonial consent, 4–5 stars, not hidden
+  lastWebLeadNotifyAt: "",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

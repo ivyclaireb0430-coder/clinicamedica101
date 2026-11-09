@@ -560,3 +560,16 @@ model CampaignStat {
 
   @@unique([campaignId, weekStart])
 }
+
+// ─────────────────────────── Sales funnel (public landing page) ───────────────────────────
+
+// Anonymous visit counts for the public landing page (/start), per Manila day and campaign.
+// No cookies, IP addresses or personal data are stored. campaignKey is the Campaign id, or "" for no campaign.
+model LandingVisit {
+  id          String @id @default(cuid())
+  day         String // "YYYY-MM-DD", Asia/Manila
+  campaignKey String @default("")
+  count       Int    @default(0)
+
+  @@unique([day, campaignKey])
+}

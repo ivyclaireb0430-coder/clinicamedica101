@@ -15,10 +15,11 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
     include: { _count: { select: { leads: true } }, stats: { where: { weekStart: week } } },
   });
   const page = process.env.FB_PAGE_USERNAME || "YourPageName";
+  const appUrl = process.env.APP_URL ?? "";
   return (
     <>
       <BackLink href="/settings" label="More" />
-      <PageHeader title="Campaigns & tracking links" subtitle="Use the m.me link in a post or reel so every Messenger inquiry is tagged to that campaign." />
+      <PageHeader title="Campaigns & tracking links" subtitle="Use the m.me link (Messenger) or the landing page link in a post, reel or ad so every inquiry is tagged to that campaign." />
       <form action={createCampaign} className="card mb-4 grid gap-2 sm:grid-cols-4">
         <input name="name" className="input" placeholder="Campaign name" required />
         <select name="channel" className="input">
@@ -43,7 +44,10 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
               <b>{c.name}</b>
               <span className="badge">{c._count.leads} leads</span>
             </div>
+            <span className="muted text-xs">Messenger</span>
             <code className="block break-all text-xs text-slate-600">https://m.me/{page}?ref={c.trackingCode}</code>
+            <span className="muted text-xs">Landing page</span>
+            <code className="block break-all text-xs text-slate-600">{appUrl}/start?c={c.trackingCode}</code>
             <form action={saveCampaignStat.bind(null, c.id, week)} className="mt-2 flex flex-wrap items-end gap-2">
               <label><span className="label">Views</span><input className="input w-28" name="views" type="number" min={0} defaultValue={c.stats[0]?.views ?? ""} /></label>
               <label><span className="label">Likes</span><input className="input w-28" name="likes" type="number" min={0} defaultValue={c.stats[0]?.likes ?? ""} /></label>

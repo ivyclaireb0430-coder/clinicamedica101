@@ -240,3 +240,24 @@ export async function saveRetentionSettings(formData: FormData) {
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "retention" });
   redirect("/settings/privacy?saved=1");
 }
+
+export async function saveLandingSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const d = z
+    .object({
+      landingHeadline: z.string().trim().min(1).max(200),
+      landingSubheadline: z.string().trim().max(500),
+      landingOffer: z.string().trim().max(200),
+      landingBenefits: z.string().max(1500),
+      landingFaq: z.string().max(4000),
+      landingCta: z.string().trim().min(1).max(60),
+    })
+    .parse(Object.fromEntries(formData));
+  for (const flag of ["landingEnabled", "landingShowFees", "landingShowTestimonials"] as const) {
+    await setSetting(flag, formData.get(flag) === "on" ? "1" : "0");
+  }
+  for (const [key, value] of Object.entries(d)) await setSetting(key as keyof typeof d, value.trim());
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "landing page" });
+  revalidatePath("/start");
+  redirect("/settings/landing?saved=1");
+}

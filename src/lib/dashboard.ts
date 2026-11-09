@@ -2,6 +2,7 @@ import { db } from "./db";
 import { addDays, manilaDateString, manilaToUtc, startOfWeek } from "./time";
 import { monthRange, receivables } from "./billing";
 import { sourceLabel } from "./constants";
+import { landingVisits } from "./funnel-db";
 
 export type PeriodKind = "week" | "month";
 export type Period = { kind: PeriodKind; start: string; end: string; label: string }; // end is inclusive
@@ -34,7 +35,7 @@ export function rate(part: number, whole: number): number | null {
   return whole > 0 ? Math.round((part / whole) * 100) : null;
 }
 
-export type FunnelRow = { key: string; label: string; inquiries: number; booked: number; attended: number; treatment: number; revenue: number };
+export type FunnelRow = { key: string; label: string; visits?: number; inquiries: number; booked: number; attended: number; treatment: number; revenue: number };
 
 type CohortLead = {
   id: string;
@@ -68,6 +69,20 @@ export function funnelTotal(rows: FunnelRow[]): FunnelRow {
     (t, r) => ({ ...t, inquiries: t.inquiries + r.inquiries, booked: t.booked + r.booked, attended: t.attended + r.attended, treatment: t.treatment + r.treatment, revenue: t.revenue + r.revenue }),
     { key: "TOTAL", label: "All channels", inquiries: 0, booked: 0, attended: 0, treatment: 0, revenue: 0 },
   );
+}
+
+/**
+ * Add landing page visits to funnel rows (pure; unit-tested). Rows are matched by key; a key with visits but
+ * no inquiries yet gets its own row, labelled from `labels`, so a campaign that brings visits but no leads still shows.
+ */
+export function attachVisits(rows: FunnelRow[], visits: Map<string, number>, labels: Map<string, string>): FunnelRow[] {
+  const out = rows.map((r) => ({ ...r, visits: visits.get(r.key) ?? 0 }));
+  for (const [key, n] of visits) {
+    if (n > 0 && !out.some((r) => r.key === key)) {
+      out.push({ key, label: labels.get(key) ?? (key === "none" ? "No campaign" : "Deleted campaign"), visits: n, inquiries: 0, booked: 0, attended: 0, treatment: 0, revenue: 0 });
+    }
+  }
+  return out;
 }
 
 /** Outcome metrics for one period. */
@@ -122,7 +137,15 @@ export async function periodFunnel(p: Period) {
   });
   const bySource = buildFunnel(leads, (l) => ({ key: l.source, label: sourceLabel(l.source) }));
   const byCampaign = buildFunnel(leads, (l) => (l.campaign ? { key: l.campaign.id, label: l.campaign.name } : { key: "none", label: "No campaign" }));
-  return { bySource, byCampaign, total: funnelTotal(bySource) };
+  const visits = await landingVisits(p.start, p.end);
+  if (visits.total === 0) return { bySource, byCampaign, total: funnelTotal(bySource), landingVisits: 0 };
+  const campaigns = await db.campaign.findMany({ where: { id: { in: [...visits.byCampaign.keys()] } }, select: { id: true, name: true } });
+  return {
+    bySource: attachVisits(bySource, new Map([["WEBSITE", visits.total]]), new Map([["WEBSITE", sourceLabel("WEBSITE")]])),
+    byCampaign: attachVisits(byCampaign, visits.byCampaign, new Map(campaigns.map((c) => [c.id, c.name]))),
+    total: funnelTotal(bySource),
+    landingVisits: visits.total,
+  };
 }
 
 /** Manually entered views/likes per campaign for the weeks in the period. */

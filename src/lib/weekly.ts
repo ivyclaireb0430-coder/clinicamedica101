@@ -18,7 +18,7 @@ const LINES: { key: keyof Metrics; label: string; money?: boolean }[] = [
 /** Plain-text weekly summary (pure; unit-tested). Numbers only, never patient names or health details. */
 export function weeklySummaryText(input: {
   period: Period; prev: Period; m: Metrics; p: Metrics; bySource: FunnelRow[];
-  followUpsDue: number; needsDoctor: number; appUrl: string;
+  followUpsDue: number; needsDoctor: number; appUrl: string; landingVisits?: number;
 }) {
   const { period, prev, m, p } = input;
   const val = (v: number, money?: boolean) => (money ? formatPhp(v) : String(v));
@@ -39,6 +39,7 @@ export function weeklySummaryText(input: {
     ...(input.bySource.length
       ? input.bySource.map((r) => `- ${r.label}: ${r.inquiries} > ${r.booked} > ${r.attended} > ${r.treatment}, ${formatPhp(r.revenue)}`)
       : ["- No new inquiries"]),
+    ...(input.landingVisits ? [`Landing page visits: ${input.landingVisits}`] : []),
     "",
     `Inquiry to booked: ${fmtRate(input.bySource, "booked", "inquiries")} · Booked to attended: ${fmtRate(input.bySource, "attended", "booked")}`,
     "",
@@ -68,7 +69,7 @@ export async function sendWeeklySummary(now = new Date()) {
   ]);
   const to = configuredTo || (await doctorEmail());
   if (!to) return { ok: false, error: "No email address to send to", week: lastWeek.start };
-  const text = weeklySummaryText({ period: lastWeek, prev, m, p, bySource: funnel.bySource, followUpsDue, needsDoctor, appUrl: process.env.APP_URL ?? "" });
+  const text = weeklySummaryText({ period: lastWeek, prev, m, p, bySource: funnel.bySource, landingVisits: funnel.landingVisits, followUpsDue, needsDoctor, appUrl: process.env.APP_URL ?? "" });
   const r = await sendGmail(to, `Clinica Medica 101 weekly summary: ${lastWeek.label}`, text);
   return { ...r, week: lastWeek.start, text };
 }
