@@ -33,7 +33,12 @@ export const authConfig = {
         pathname.startsWith("/api/webhooks");
       if (isPublic) return true;
       // Owner 2FA enforcement happens in the (app) layout, which reads the user fresh from the database.
-      return Boolean(auth?.user);
+      if (auth?.user) return true;
+      // Behind the reverse proxy, request.nextUrl is the internal address (localhost:3000), so build the
+      // login URL from the public host the proxy forwarded. Relative redirect target only (no open redirect).
+      const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
+      const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+      return Response.redirect(new URL("/login", `${proto}://${host}`), 307);
     },
   },
 } satisfies NextAuthConfig;
