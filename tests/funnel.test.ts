@@ -106,3 +106,18 @@ describe("dedicated funnels", async () => {
     expect(inquiryErrorMessage("whatever", "tl")).toBe("Pakisuri ang form.");
   });
 });
+
+describe("self-booking", async () => {
+  const { spreadSlots, landingInquirySchema: schema } = await import("@/lib/funnel");
+  it("spreads slots evenly, keeping the first and last", () => {
+    expect(spreadSlots([1, 2, 3], 8)).toEqual([1, 2, 3]);
+    expect(spreadSlots([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3)).toEqual([0, 5, 10]);
+    expect(spreadSlots([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 4)).toEqual([0, 3, 6, 9]);
+  });
+  it("parses the chosen slot, and treats empty as 'call me'", () => {
+    const base = { firstName: "Ana", mobile: "09171234567", consent: "on" };
+    expect(schema.parse({ ...base, slotStart: "2026-11-12T02:00:00.000Z" }).slotStart?.toISOString()).toBe("2026-11-12T02:00:00.000Z");
+    expect(schema.parse({ ...base, slotStart: "" }).slotStart).toBeUndefined();
+    expect(schema.safeParse({ ...base, slotStart: "tomorrow-ish" }).success).toBe(false);
+  });
+});

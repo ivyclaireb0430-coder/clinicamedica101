@@ -3,9 +3,10 @@ import { decryptOptional, encryptOptional } from "./crypto";
 import { audit } from "./audit";
 import { getSetting, setSetting } from "./settings";
 import { doctorEmail, sendGmail } from "./google";
-import { manilaDateString } from "./time";
+import { addDays, manilaDateString, todayManila } from "./time";
+import { getOpenSlots } from "./booking";
 import { testimonialName } from "./followup";
-import { inquiryNote, type LandingInquiry } from "./funnel";
+import { inquiryNote, spreadSlots, type LandingInquiry } from "./funnel";
 import { LANDING_PAGE_LABELS, type LandingPageId } from "./landing-content";
 
 export async function campaignByCode(code: string | null) {
@@ -101,11 +102,22 @@ export async function notifyWebInquiry(now = new Date()): Promise<void> {
   if (last && now.getTime() - new Date(last).getTime() < WEB_NOTIFY_THROTTLE_MS) return;
   const to = await doctorEmail();
   if (!to) return;
-  const count = await db.lead.count({ where: { source: "WEBSITE", stage: "NEW" } });
+  const [count, booked] = await Promise.all([
+    db.lead.count({ where: { source: "WEBSITE", stage: "NEW" } }),
+    db.appointment.count({ where: { channel: "WEBSITE", createdAt: { gte: new Date(now.getTime() - 86_400_000) } } }),
+  ]);
+  if (count + booked === 0) return;
+  const app = process.env.APP_URL ?? "";
   const result = await sendGmail(
     to,
-    `Clinica Medica 101: ${count} bagong ${count === 1 ? "inquiry" : "inquiries"} galing sa website`,
-    `May ${count} na bagong inquiry galing sa landing page na hindi pa natatawagan.\n\nBuksan ang Leads: ${process.env.APP_URL ?? ""}/leads?stage=NEW\n\n(Walang patient details sa email na ito para sa privacy.)`,
+    `Clinica Medica 101: website — ${booked} online ${booked === 1 ? "booking" : "bookings"}, ${count} ${count === 1 ? "inquiry" : "inquiries"} to call`,
+    [
+      `Galing sa landing page:`,
+      `- ${booked} online booking sa nakaraang 24 oras (i-confirm sa pasyente): ${app}/calendar`,
+      `- ${count} inquiry na hindi pa natatawagan: ${app}/leads?stage=NEW`,
+      ``,
+      `(Walang patient details sa email na ito para sa privacy.)`,
+    ].join("\n"),
   ).catch(() => ({ ok: false }));
   if (result.ok) await setSetting("lastWebLeadNotifyAt", now.toISOString());
 }
@@ -121,4 +133,32 @@ export async function publicTestimonials(limit = 6) {
   return rows
     .map((r) => ({ rating: r.rating ?? 5, text: decryptOptional(r.commentEnc)?.trim() ?? "", name: testimonialName(r.patient, r.displayName ?? "INITIAL") }))
     .filter((t) => t.text.length >= 10);
+}
+
+export type BookableDay = { date: string; slots: string[] }; // slots: ISO start times
+
+/**
+ * Open slots for self-booking on the landing page: the next `days` days with at least one opening,
+ * at most `perDay` times each (spread across the day so people see morning and afternoon choices).
+ */
+export async function bookableDays(consultationTypeId: string, days = 14, perDay = 8, now = new Date()): Promise<BookableDay[]> {
+  const out: BookableDay[] = [];
+  const today = todayManila(now);
+  for (let i = 0; i < days; i++) {
+    const date = addDays(today, i);
+    const open = await getOpenSlots(date, consultationTypeId, now);
+    if (open.length) out.push({ date, slots: spreadSlots(open, perDay).map((s) => s.startAt.toISOString()) });
+  }
+  return out;
+}
+
+/** The consultation type booked from the landing page: the first active one (Initial consultation). */
+export async function webBookingType() {
+  return db.consultationType.findFirst({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+}
+
+/** Is `startAt` still an open slot for this type? */
+export async function isOpenSlot(consultationTypeId: string, startAt: Date, now = new Date()) {
+  const open = await getOpenSlots(manilaDateString(startAt), consultationTypeId, now);
+  return open.some((s) => s.startAt.getTime() === startAt.getTime());
 }
