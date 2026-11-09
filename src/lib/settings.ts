@@ -36,12 +36,13 @@ export const SETTING_DEFAULTS = {
   landingBenefits:
     "Mahabang consultation, hindi minamadali\nPlano na swak sa inyong kondisyon at budget\nMay follow-up para masubaybayan ang progress ninyo\nNasa Makati, malapit sa Kalayaan Ave",
   landingFaq:
-    "Magkano ang consultation? | Nakalista ang fees sa page na ito. Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
+    "Magkano ang consultation? | ₱1,000 ang initial consultation at follow-up. ₱800 para sa Senior Citizens at PWD (dalhin lang ang ID). Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
   landingCta: "Magpa-schedule ng consultation",
   landingDoctorName: "Dr. Irene Lim",
   landingDoctorTitle: "Doctor, Clinica Medica 101 Center for Complementary Medicine",
   landingDoctorBio:
     "Si Dr. Irene Lim ang personal na humaharap sa bawat consultation. Pinakikinggan niya ang buong kwento ninyo, tinitingnan ang inyong lab results at mga gamot, at ipinapaliwanag nang malinaw ang plano bago kayo magsimula.",
+  landingFeeNote: "Senior Citizens at PWD: ₱800 sa initial consultation at follow-up. Dalhin lang ang inyong Senior o PWD ID.",
   landingShowFees: "1", // list active consultation types and fees
   landingShowTestimonials: "1", // feedback with testimonial consent, 4–5 stars, not hidden
   lastWebLeadNotifyAt: "",

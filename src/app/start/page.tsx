@@ -61,7 +61,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
   const code = campaignCodeFrom(sp);
   const keys = [
     "landingEnabled", "clinicName", "clinicAddress", "landingHeadline", "landingSubheadline", "landingOffer", "landingBenefits",
-    "landingFaq", "landingCta", "landingShowFees", "landingShowTestimonials", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio",
+    "landingFaq", "landingCta", "landingFeeNote", "landingShowFees", "landingShowTestimonials", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio",
   ] as const;
   const [values, campaign] = await Promise.all([Promise.all(keys.map((k) => getSetting(k))), campaignByCode(code)]);
   const v = Object.fromEntries(keys.map((k, i) => [k, values[i]])) as Record<(typeof keys)[number], string>;
@@ -224,6 +224,11 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
                 </li>
               ))}
             </ul>
+            {v.landingFeeNote && (
+              <p className="mx-auto mt-4 flex max-w-4xl items-start gap-2 rounded-2xl bg-cm-mint px-4 py-3 text-sm font-medium text-cm-navy">
+                {Icon.check("h-5 w-5 shrink-0 text-cm-green")} {v.landingFeeNote}
+              </p>
+            )}
           </section>
         )}
 

@@ -43,8 +43,8 @@ async function main() {
   for (const [i, s] of SCRIPTS.entries()) await db.script.create({ data: { ...s, sortOrder: i } });
 
   const types = await Promise.all([
-    db.consultationType.create({ data: { name: "Initial consultation", description: "Full integrative assessment (sample fee, edit in Settings)", durationMin: 60, feePhp: 2500, sortOrder: 0 } }),
-    db.consultationType.create({ data: { name: "Follow-up consultation", description: "Review of progress and plan (sample fee)", durationMin: 30, feePhp: 1500, sortOrder: 1 } }),
+    db.consultationType.create({ data: { name: "Initial consultation", description: "Full integrative assessment", durationMin: 60, feePhp: 1000, sortOrder: 0 } }),
+    db.consultationType.create({ data: { name: "Follow-up consultation", description: "Review of progress and plan", durationMin: 30, feePhp: 1000, sortOrder: 1 } }),
   ]);
 
   // Sample clinic hours: Mon–Fri 10:00–17:00, Sat 09:00–12:00.

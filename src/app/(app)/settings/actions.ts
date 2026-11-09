@@ -251,6 +251,7 @@ export async function saveLandingSettings(formData: FormData) {
       landingBenefits: z.string().max(1500),
       landingFaq: z.string().max(4000),
       landingCta: z.string().trim().min(1).max(60),
+      landingFeeNote: z.string().trim().max(250),
       landingDoctorName: z.string().trim().min(1).max(80),
       landingDoctorTitle: z.string().trim().max(150),
       landingDoctorBio: z.string().trim().max(1200),
