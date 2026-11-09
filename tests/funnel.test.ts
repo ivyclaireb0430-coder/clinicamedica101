@@ -66,3 +66,43 @@ describe("landing page funnel", () => {
     ]);
   });
 });
+
+describe("dedicated funnels", async () => {
+  const { funnelCopy, isLandingPage, pageLang, pagePath, UI } = await import("@/lib/landing-content");
+  const { inquiryErrorMessage } = await import("@/lib/funnel");
+  const vars = { doctor: "Dr. Irene Lim", promoName: "Vector Scan", promoPrice: "₱3,000", promoOld: "₱16,000", consultFee: "₱1,000", seniorFee: "₱800" };
+
+  it("maps page ids to paths and languages, rejecting unknown ids", () => {
+    expect(pagePath("start")).toBe("/start");
+    expect(pagePath("vector-scan/en")).toBe("/start/vector-scan/en");
+    expect(pageLang("consultation/en")).toBe("en");
+    expect(pageLang("consultation")).toBe("tl");
+    expect(isLandingPage("vector-scan")).toBe(true);
+    expect(isLandingPage("../admin")).toBe(false);
+  });
+
+  it("puts the configured prices into the copy in both languages", () => {
+    const tl = funnelCopy("vector-scan", "tl", vars);
+    const en = funnelCopy("vector-scan", "en", vars);
+    expect(tl.headline).toContain("₱3,000");
+    expect(en.offer).toContain("regular ₱16,000");
+    expect(en.faq.find((f) => f.q.startsWith("How much"))?.a).toContain("₱800 for Senior Citizens");
+    expect(funnelCopy("consultation", "en", vars).sub).toContain("₱1,000");
+    expect(funnelCopy("consultation", "tl", { ...vars, seniorFee: "" }).sub).not.toContain("Senior");
+  });
+
+  it("never promises a cure in the funnel copy", () => {
+    for (const f of ["vector-scan", "consultation"] as const) {
+      for (const l of ["tl", "en"] as const) {
+        const text = JSON.stringify(funnelCopy(f, l, vars)).toLowerCase();
+        expect(text).not.toMatch(/\bcure|gagaling|guarantee|garantisado/);
+      }
+    }
+  });
+
+  it("has the same interface text keys in Taglish and English", () => {
+    expect(Object.keys(UI.en).sort()).toEqual(Object.keys(UI.tl).sort());
+    expect(inquiryErrorMessage("mobile", "en")).toMatch(/mobile number/);
+    expect(inquiryErrorMessage("whatever", "tl")).toBe("Pakisuri ang form.");
+  });
+});

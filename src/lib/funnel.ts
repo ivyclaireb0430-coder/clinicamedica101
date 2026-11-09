@@ -78,6 +78,19 @@ export const landingInquirySchema = z.object({
 
 export type LandingInquiry = z.infer<typeof landingInquirySchema>;
 
+const ERRORS: Record<string, { tl: string; en: string }> = {
+  firstName: { tl: "Pakilagay ang pangalan.", en: "Please enter your first name." },
+  mobile: { tl: "Pakilagay ang tamang mobile number (hal. 0917 123 4567).", en: "Please enter a valid PH mobile number (e.g. 0917 123 4567)." },
+  email: { tl: "Mali ang email.", en: "Please check your email address." },
+  consent: { tl: "Kailangan ang pahintulot sa Privacy Notice para makapag-inquire.", en: "Please agree to the Privacy Notice so we can contact you." },
+  rate: { tl: "Masyadong maraming submission. Pakisubukan ulit mamaya o mag-message sa amin sa Facebook.", en: "Too many submissions. Please try again later or message us on Facebook." },
+};
+
+/** Form error shown to the visitor, in the page's language. `field` is the failing field, or "rate". */
+export function inquiryErrorMessage(field: string, lang: "tl" | "en"): string {
+  return (ERRORS[field] ?? { tl: "Pakisuri ang form.", en: "Please check the form." })[lang];
+}
+
 /** Front desk note for a web inquiry. No health information (the concern is stored encrypted, separately). */
 export function inquiryNote(
   i: Pick<LandingInquiry, "preferredTime" | "contactMethod" | "promoInterest">,

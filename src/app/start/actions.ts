@@ -2,28 +2,37 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createRateLimiter, landingInquirySchema } from "@/lib/funnel";
+import { createRateLimiter, inquiryErrorMessage, landingInquirySchema } from "@/lib/funnel";
 import { campaignByCode, notifyWebInquiry, saveWebInquiry } from "@/lib/funnel-db";
+import { isLandingPage, pageLang, pagePath } from "@/lib/landing-content";
 import { getSetting } from "@/lib/settings";
 
 // 5 submissions per hour per IP address (the address is only kept in memory, never stored).
 const allow = createRateLimiter(5, 60 * 60 * 1000);
 
-export async function submitLandingInquiry(code: string | null, formData: FormData) {
-  const back = (error: string) => redirect(`/start?${new URLSearchParams({ ...(code ? { c: code } : {}), error })}#form`);
-  if ((await getSetting("landingEnabled")) !== "1") redirect("/start");
+export async function submitLandingInquiry(code: string | null, pageIdRaw: string, formData: FormData) {
+  // Bound arguments come back from the browser, so check them again.
+  const pageId = isLandingPage(pageIdRaw) ? pageIdRaw : "start";
+  const safeCode = code && /^[a-z0-9][a-z0-9_-]{0,59}$/.test(code) ? code : null;
+  const lang = pageLang(pageId);
+  const path = pagePath(pageId);
+  const qs = (extra: Record<string, string>) => new URLSearchParams({ ...(safeCode ? { c: safeCode } : {}), ...extra }).toString();
+  const back = (error: string) => redirect(`${path}?${qs({ error })}#form`);
+  const thanks = `/start/salamat?${qs({ from: pageId })}`;
+
+  if ((await getSetting("landingEnabled")) !== "1") redirect(path);
 
   // Honeypot: real people never see or fill the "website" field.
-  if (String(formData.get("website") ?? "") !== "") redirect(`/start/salamat${code ? `?c=${code}` : ""}`);
+  if (String(formData.get("website") ?? "") !== "") redirect(thanks);
 
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
-  if (!allow(ip)) back("Masyadong maraming submission. Pakisubukan ulit mamaya o mag-message sa amin sa Facebook.");
+  if (!allow(ip)) back(inquiryErrorMessage("rate", lang));
 
   const parsed = landingInquirySchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) back(parsed.error.issues[0]?.message ?? "Pakisuri ang form");
-  const campaign = await campaignByCode(code);
-  await saveWebInquiry(parsed.data!, campaign);
+  if (!parsed.success) back(inquiryErrorMessage(String(parsed.error.issues[0]?.path[0] ?? ""), lang));
+  const campaign = await campaignByCode(safeCode);
+  await saveWebInquiry(parsed.data!, campaign, pageId);
   await notifyWebInquiry().catch(() => undefined);
-  redirect(`/start/salamat${code ? `?c=${encodeURIComponent(code)}` : ""}`);
+  redirect(thanks);
 }

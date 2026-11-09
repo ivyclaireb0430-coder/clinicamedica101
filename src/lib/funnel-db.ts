@@ -6,6 +6,7 @@ import { doctorEmail, sendGmail } from "./google";
 import { manilaDateString } from "./time";
 import { testimonialName } from "./followup";
 import { inquiryNote, type LandingInquiry } from "./funnel";
+import { LANDING_PAGE_LABELS, type LandingPageId } from "./landing-content";
 
 export async function campaignByCode(code: string | null) {
   if (!code) return null;
@@ -13,35 +14,43 @@ export async function campaignByCode(code: string | null) {
 }
 
 /** Count one landing page view for today (Manila) and the campaign, if any. Anonymous. */
-export async function recordLandingVisit(campaignId: string | null, now = new Date()) {
+export async function recordLandingVisit(campaignId: string | null, page: LandingPageId = "start", now = new Date()) {
   const day = manilaDateString(now);
   const campaignKey = campaignId ?? "";
   await db.landingVisit.upsert({
-    where: { day_campaignKey: { day, campaignKey } },
-    create: { day, campaignKey, count: 1 },
+    where: { day_campaignKey_page: { day, campaignKey, page } },
+    create: { day, campaignKey, page, count: 1 },
     update: { count: { increment: 1 } },
   });
 }
 
-/** Landing page visits between two Manila dates (inclusive), by campaign id ("none" = no campaign). */
+/** Landing page visits between two Manila dates (inclusive), by campaign id ("none" = no campaign) and by page. */
 export async function landingVisits(start: string, end: string) {
   const rows = await db.landingVisit.findMany({ where: { day: { gte: start, lte: end } } });
   const byCampaign = new Map<string, number>();
+  const byPage = new Map<string, number>();
   let total = 0;
   for (const r of rows) {
     const key = r.campaignKey || "none";
     byCampaign.set(key, (byCampaign.get(key) ?? 0) + r.count);
+    byPage.set(r.page, (byPage.get(r.page) ?? 0) + r.count);
     total += r.count;
   }
-  return { byCampaign, total };
+  return { byCampaign, byPage, total };
 }
 
 /**
  * Save a web form inquiry as a lead. If the same mobile number already has an open (not lost) inquiry
  * that has not become a patient, update that one instead of creating a duplicate.
  */
-export async function saveWebInquiry(input: LandingInquiry, campaign: { id: string; name: string } | null, now = new Date()) {
-  const note = inquiryNote(input, campaign?.name, await getSetting("landingPromoName"));
+export async function saveWebInquiry(
+  input: LandingInquiry,
+  campaign: { id: string; name: string } | null,
+  page: LandingPageId = "start",
+  now = new Date(),
+) {
+  const pageNote = page === "start" ? "" : ` [${LANDING_PAGE_LABELS[page]}]`;
+  const note = inquiryNote(input, campaign?.name, await getSetting("landingPromoName")) + pageNote;
   const existing = await db.lead.findFirst({
     where: { mobile: input.mobile, stage: { not: "LOST" }, patient: null },
     orderBy: { createdAt: "desc" },
@@ -69,6 +78,7 @@ export async function saveWebInquiry(input: LandingInquiry, campaign: { id: stri
       mobile: input.mobile,
       email: input.email ?? null,
       source: "WEBSITE",
+      landingPage: page,
       campaignId: campaign?.id ?? null,
       concernEnc: encryptOptional(input.concern),
       privacyConsent: true,

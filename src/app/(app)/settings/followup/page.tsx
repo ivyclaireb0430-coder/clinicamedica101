@@ -36,7 +36,7 @@ export default async function FollowUpSettings({ searchParams }: { searchParams:
           <h2 className="pt-2">Acknowledgement receipt</h2>
           <label className="block">
             <span className="label">Header lines (registered name, TIN, address)</span>
-            <textarea className="input" name="receiptHeader" rows={4} maxLength={400} defaultValue={v.receiptHeader} placeholder={"Clinica Medica 101 Center for Complementary Medicine\nTIN 000-000-000-000\nCenturia Medical Makati"} />
+            <textarea className="input" name="receiptHeader" rows={4} maxLength={400} defaultValue={v.receiptHeader} placeholder={"Clinica Medica 101 Center for Integrative Medicine\nTIN 000-000-000-000\nCenturia Medical Makati"} />
           </label>
           <p className="muted text-xs">Ang acknowledgement receipt ay hindi official receipt (OR) ng BIR. Isulat ang OR number sa payment kung nag-issue kayo ng OR.</p>
         </section>

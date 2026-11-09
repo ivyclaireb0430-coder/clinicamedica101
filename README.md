@@ -1,6 +1,6 @@
 # Clinica Medica 101 — Clinic Operating System
 
-Patient acquisition and retention system for Clinica Medica 101 Center for Complementary Medicine
+Patient acquisition and retention system for Clinica Medica 101 Center for Integrative Medicine
 (Centuria Medical Makati): inquiries → booking → consultation → treatment → follow-up → measurement.
 
 Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner, Doctor, Front desk).
@@ -160,4 +160,8 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
   in the dashboard funnel, the CSV export and the Monday email.
 - After submitting, people land on `/start/salamat`, which ad platforms can use as the "Lead" conversion URL.
 - The clinic gets an email (count and link only, at most every 15 minutes) when new web inquiries arrive.
+- Dedicated funnels with their own Taglish and English copy (`src/lib/landing-content.ts`):
+  `/start/vector-scan`, `/start/vector-scan/en`, `/start/consultation`, `/start/consultation/en`.
+  Prices, doctor and fee notes come from settings and consultation types. Visits and inquiries are counted per page
+  (More → Landing page) and each lead records which page it came from.
 - Testimonials shown are only feedback with the patient's testimonial consent, 4–5 stars, and not hidden.

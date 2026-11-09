@@ -2,7 +2,7 @@ import { db } from "./db";
 
 export const SETTING_DEFAULTS = {
   followUpDays: "3", // leads with no booking after N days go to "Needs follow-up"
-  clinicName: "Clinica Medica 101 Center for Complementary Medicine",
+  clinicName: "Clinica Medica 101 Center for Integrative Medicine",
   clinicAddress: "Centuria Medical Makati, Kalayaan Ave cor. Salamanca St, Makati City",
   automationEnabled: "1", // Messenger auto-replies on/off
   remindersEnabled: "1",
@@ -31,7 +31,7 @@ export const SETTING_DEFAULTS = {
   landingEnabled: "1",
   landingHeadline: "Matagal na bang may iniinda? Hanapin natin ang ugat, hindi lang ang sintomas.",
   landingSubheadline:
-    "Complementary medicine consultation sa Centuria Medical Makati. Isang doktor na makikinig sa buong kwento ninyo at gagawa ng plano para sa inyo.",
+    "Integrative medicine consultation sa Centuria Medical Makati. Isang doktor na makikinig sa buong kwento ninyo at gagawa ng plano para sa inyo.",
   landingOffer: "PROMO: Vector Scan ₱3,000 na lang (dati ₱16,000), dagdag sa consultation fee.", // highlighted banner in the hero; blank hides it
   // Featured service/promo section; blank name hides it. Prices are whole pesos.
   landingPromoName: "Vector Scan",
@@ -45,10 +45,16 @@ export const SETTING_DEFAULTS = {
     "Magkano ang consultation? | ₱1,000 ang initial consultation at follow-up. ₱800 para sa Senior Citizens at PWD (dalhin lang ang ID). Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
   landingCta: "Magpa-schedule ng consultation",
   landingDoctorName: "Dr. Irene Lim",
-  landingDoctorTitle: "Doctor, Clinica Medica 101 Center for Complementary Medicine",
+  landingDoctorTitle: "Doctor, Clinica Medica 101 Center for Integrative Medicine",
   landingDoctorBio:
     "Si Dr. Irene Lim ang personal na humaharap sa bawat consultation. Pinakikinggan niya ang buong kwento ninyo, tinitingnan ang inyong lab results at mga gamot, at ipinapaliwanag nang malinaw ang plano bago kayo magsimula.",
   landingFeeNote: "Senior Citizens at PWD: ₱800 sa initial consultation at follow-up. Dalhin lang ang inyong Senior o PWD ID.",
+  // English versions for the /en funnel pages
+  landingDoctorBioEn:
+    "Dr. Irene Lim personally sees every patient. She listens to your whole story, reviews your lab results and medicines, and explains the plan clearly before you start.",
+  landingPromoDescEn:
+    "A non-invasive scan that is part of Dr. Lim's integrative assessment. It helps build a fuller picture of your health so your plan fits you better. The consultation fee is separate.",
+  landingFeeNoteEn: "Senior Citizens and PWDs: ₱800 for the initial consultation and follow-ups. Just bring your Senior or PWD ID.",
   landingShowFees: "1", // list active consultation types and fees
   landingShowTestimonials: "1", // feedback with testimonial consent, 4–5 stars, not hidden
   lastWebLeadNotifyAt: "",
