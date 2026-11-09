@@ -96,7 +96,7 @@ export const UI = {
     feesSub: "No surprises. This is what you pay for the consultation.",
     minutes: "minutes",
     testimonialsTitle: "What our patients say",
-    promoBadge: "Limited promo",
+    promoBadge: "Promo price",
     save: "You save",
     plusConsult: "+ consultation fee",
     availPromo: "Claim the promo",
