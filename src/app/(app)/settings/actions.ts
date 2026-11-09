@@ -240,3 +240,35 @@ export async function saveRetentionSettings(formData: FormData) {
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "retention" });
   redirect("/settings/privacy?saved=1");
 }
+
+export async function saveLandingSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const d = z
+    .object({
+      landingHeadline: z.string().trim().min(1).max(200),
+      landingSubheadline: z.string().trim().max(500),
+      landingOffer: z.string().trim().max(200),
+      landingPromoName: z.string().trim().max(80),
+      landingPromoOldPrice: z.string().trim().regex(/^\d{0,7}$/, "Whole pesos only"),
+      landingPromoPrice: z.string().trim().regex(/^\d{0,7}$/, "Whole pesos only"),
+      landingPromoDesc: z.string().trim().max(600),
+      landingBenefits: z.string().max(1500),
+      landingFaq: z.string().max(4000),
+      landingCta: z.string().trim().min(1).max(60),
+      landingFeeNote: z.string().trim().max(250),
+      landingDoctorBioEn: z.string().trim().max(1200),
+      landingPromoDescEn: z.string().trim().max(600),
+      landingFeeNoteEn: z.string().trim().max(250),
+      landingDoctorName: z.string().trim().min(1).max(80),
+      landingDoctorTitle: z.string().trim().max(150),
+      landingDoctorBio: z.string().trim().max(1200),
+    })
+    .parse(Object.fromEntries(formData));
+  for (const flag of ["landingEnabled", "landingShowFees", "landingShowTestimonials"] as const) {
+    await setSetting(flag, formData.get(flag) === "on" ? "1" : "0");
+  }
+  for (const [key, value] of Object.entries(d)) await setSetting(key as keyof typeof d, value.trim());
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "landing page" });
+  revalidatePath("/start");
+  redirect("/settings/landing?saved=1");
+}

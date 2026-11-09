@@ -87,6 +87,7 @@ model Lead {
   firstContactAt  DateTime  @default(now())
   lastContactAt   DateTime  @default(now())
   notes           String?
+  landingPage     String? // web form inquiries: which landing page, e.g. "vector-scan/en"
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -559,4 +560,18 @@ model CampaignStat {
   updatedAt  DateTime @updatedAt
 
   @@unique([campaignId, weekStart])
+}
+
+// ─────────────────────────── Sales funnel (public landing page) ───────────────────────────
+
+// Anonymous visit counts for the public landing page (/start), per Manila day and campaign.
+// No cookies, IP addresses or personal data are stored. campaignKey is the Campaign id, or "" for no campaign.
+model LandingVisit {
+  id          String @id @default(cuid())
+  day         String // "YYYY-MM-DD", Asia/Manila
+  campaignKey String @default("")
+  page        String @default("start") // which landing page, e.g. "start", "vector-scan/en"
+  count       Int    @default(0)
+
+  @@unique([day, campaignKey, page])
 }

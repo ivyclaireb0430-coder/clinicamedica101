@@ -44,6 +44,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ kind: st
       const prev = previousPeriod(period);
       const [m, p, f] = await Promise.all([periodMetrics(period), periodMetrics(prev), periodFunnel(period)]);
       const metricRows = (Object.keys(m) as (keyof typeof m)[]).map((k) => ["Metric", k, m[k], p[k], "", "", ""]);
+      metricRows.push(["Metric", "landing_page_visits", f.landingVisits, "", "", "", ""]);
       const funnelRows = [...f.bySource, f.total].map((r) => [
         "Funnel by source", r.label, r.inquiries, r.booked, r.attended, r.treatment, r.revenue,
       ]);

@@ -17,6 +17,7 @@ export default async function SettingsPage() {
     { href: "/settings/schedule", title: "Schedule, fees & closed dates", desc: "Clinic hours, consultation types, blocked dates", show: can(user.role, "booking:write") },
     { href: "/settings/messenger", title: "Messenger & reminders", desc: "Auto-replies, reminders, SMS, takeover", show: can(user.role, "settings:manage") },
     { href: "/scripts", title: "Saved scripts", desc: "Taglish replies used by the bot and inbox", show: true },
+    { href: "/settings/landing", title: "Landing page (sales funnel)", desc: "Public page for ads: offer, FAQ, inquiry form", show: can(user.role, "settings:manage") },
     { href: "/settings/campaigns", title: "Campaigns & tracking links", desc: "Know which channel brings patients", show: can(user.role, "settings:manage") },
     { href: "/settings/google", title: "Google Calendar", desc: "Two-way sync with your calendar", show: can(user.role, "settings:manage") },
     { href: "/settings/users", title: "Users & roles", desc: "Add front desk or doctor accounts later", show: can(user.role, "users:manage") },

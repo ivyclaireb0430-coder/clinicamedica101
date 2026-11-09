@@ -1,6 +1,6 @@
 # Clinica Medica 101 — Clinic Operating System
 
-Patient acquisition and retention system for Clinica Medica 101 Center for Complementary Medicine
+Patient acquisition and retention system for Clinica Medica 101 Center for Integrative Medicine
 (Centuria Medical Makati): inquiries → booking → consultation → treatment → follow-up → measurement.
 
 Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner, Doctor, Front desk).
@@ -16,6 +16,7 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 4 | Follow-up/recall, progress tracking, feedback, payments, receivables, receipts | **Done** |
 | 5 | Weekly dashboard, Monday email, CSV export, audit log screen (AI assistant: awaiting owner decision) | **Done** |
 | 6 | PostgreSQL, deployment (VPS + HTTPS), backup/restore, privacy tools, Taglish SOPs | **Done** |
+| 7 | Sales funnel: public landing page (`/start`) with inquiry form into Leads, ad tracking links, page visits in the dashboard funnel | **In review** |
 
 ## Run it locally
 
@@ -146,3 +147,21 @@ In production, call `GET /api/cron/google-sync` with header `Authorization: Bear
 - **Privacy tools:** More → Privacy & data (access export, erasure with receipts kept anonymously, retention review,
   breach checklist). Full breach steps: [docs/BREACH-RESPONSE.md](docs/BREACH-RESPONSE.md).
 - **SOPs (Taglish):** [docs/sops/](docs/sops/README.md), one per module.
+
+## Sales funnel (landing page)
+
+`/start` is a public, mobile-first landing page for ads. Edit its text under More → Landing page.
+
+- The inquiry form creates a **New inquiry** lead (source Website). The health concern is encrypted like any other lead;
+  a repeat inquiry from the same mobile number updates the open lead instead of creating a duplicate.
+- Tracking: `/start?c=<campaign tracking code>` (or `utm_campaign=<code>`) tags the lead to that campaign.
+  Create codes under More → Campaigns & tracking links.
+- Page visits are counted anonymously per day and campaign (no cookies, no IP stored) and shown as "Page visits"
+  in the dashboard funnel, the CSV export and the Monday email.
+- After submitting, people land on `/start/salamat`, which ad platforms can use as the "Lead" conversion URL.
+- The clinic gets an email (count and link only, at most every 15 minutes) when new web inquiries arrive.
+- Dedicated funnels with their own Taglish and English copy (`src/lib/landing-content.ts`):
+  `/start/vector-scan`, `/start/vector-scan/en`, `/start/consultation`, `/start/consultation/en`.
+  Prices, doctor and fee notes come from settings and consultation types. Visits and inquiries are counted per page
+  (More → Landing page) and each lead records which page it came from.
+- Testimonials shown are only feedback with the patient's testimonial consent, 4–5 stars, and not hidden.

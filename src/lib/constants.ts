@@ -47,10 +47,12 @@ export function sourceLabel(key: string): string {
 }
 
 export const CHANNELS = [
+  { key: "FB_AD", label: "FB/IG ad (paid)" },
   { key: "FB_REEL", label: "FB Reel" },
   { key: "FB_POST", label: "FB post" },
   { key: "RADIO", label: "Radio" },
   { key: "REFERRAL", label: "Referral" },
+  { key: "GOOGLE_AD", label: "Google ad (paid)" },
   { key: "OTHER", label: "Other" },
 ] as const;
 
