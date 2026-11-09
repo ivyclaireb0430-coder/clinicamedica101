@@ -48,8 +48,8 @@ async function main() {
   ]);
 
   // Sample clinic hours: Mon–Fri 10:00–17:00, Sat 09:00–12:00.
-  for (const weekday of [1, 2, 3, 4, 5]) await db.scheduleRule.create({ data: { weekday, startTime: "10:00", endTime: "17:00" } });
-  await db.scheduleRule.create({ data: { weekday: 6, startTime: "09:00", endTime: "12:00" } });
+  // Consultations 2pm–9pm every day (clinic opens 10am on weekdays, but consults start at 2pm).
+  for (const weekday of [0, 1, 2, 3, 4, 5, 6]) await db.scheduleRule.create({ data: { weekday, startTime: "14:00", endTime: "21:00" } });
   await db.blockedDate.create({ data: { date: "2026-11-01", reason: "All Saints' Day" } });
   await db.blockedDate.create({ data: { date: "2026-11-30", reason: "Bonifacio Day" } });
 

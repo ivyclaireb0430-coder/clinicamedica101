@@ -4,6 +4,10 @@ export const SETTING_DEFAULTS = {
   followUpDays: "3", // leads with no booking after N days go to "Needs follow-up"
   clinicName: "Clinica Medica 101 Center for Integrative Medicine",
   clinicAddress: "Centuria Medical Makati, Kalayaan Ave cor. Salamanca St, Makati City",
+  clinicPhone: "0922 875 2899", // shown on the landing pages as tap-to-call; blank hides it
+  // Shown on the landing pages. Online booking slots come from Settings → Schedule, not from this text.
+  clinicHours: "Clinic: Lunes–Biyernes 10am–9pm, Sabado–Linggo 2pm–9pm. Consultation: 2pm–9pm araw-araw.",
+  clinicHoursEn: "Clinic: Mon–Fri 10am–9pm, Sat–Sun 2pm–9pm. Consultations: 2pm–9pm daily.",
   automationEnabled: "1", // Messenger auto-replies on/off
   remindersEnabled: "1",
   smsEnabled: "1", // owner approved SMS; only sends once SEMAPHORE_API_KEY is set

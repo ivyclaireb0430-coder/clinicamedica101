@@ -37,11 +37,18 @@ describe("landing page funnel", () => {
     expect(landingInquirySchema.safeParse({ firstName: "Ana", mobile: "09171234567" }).success).toBe(false); // no consent
     expect(landingInquirySchema.safeParse({ firstName: "", mobile: "09171234567", consent: "on" }).success).toBe(false);
     expect(landingInquirySchema.safeParse({ firstName: "Ana", mobile: "09171234567", consent: "on", preferredTime: "MIDNIGHT" }).success).toBe(false);
+    expect(landingInquirySchema.safeParse({ firstName: "Ana", mobile: "09171234567", consent: "on", preferredTime: "WEEKDAY_AM" }).success).toBe(false); // no morning consults
+  });
+
+  it("builds a tap-to-call link for the clinic number", async () => {
+    const { telHref } = await import("@/lib/funnel");
+    expect(telHref("0922 875 2899")).toBe("tel:+639228752899");
+    expect(telHref("")).toBeNull();
   });
 
   it("writes a front desk note without the health concern", () => {
-    const note = inquiryNote({ preferredTime: "SATURDAY", contactMethod: "VIBER" }, "Nov promo");
-    expect(note).toBe("Web form (Nov promo): gusto ng schedule sabado, contact via Viber.");
+    const note = inquiryNote({ preferredTime: "WEEKEND", contactMethod: "VIBER" }, "Nov promo");
+    expect(note).toBe("Web form (Nov promo): gusto ng schedule sabado o linggo, contact via Viber.");
     expect(inquiryNote({ preferredTime: "ANY", contactMethod: "CALL", promoInterest: "on" }, null, "Vector Scan")).toBe(
       "Web form: gusto ng schedule kahit kailan, contact via Tawag. Interesado sa Vector Scan promo.",
     );

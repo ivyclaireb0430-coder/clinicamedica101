@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { campaignCodeFrom } from "@/lib/funnel";
+import { campaignCodeFrom, telHref } from "@/lib/funnel";
+import { getSetting } from "@/lib/settings";
 import { UI, isLandingPage, pageLang, pagePath } from "@/lib/landing-content";
 import { messengerLink } from "../LandingView";
 
@@ -14,6 +15,8 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
   const lang = pageLang(from);
   const t = UI[lang];
   const messenger = messengerLink(code);
+  const phone = await getSetting("clinicPhone");
+  const tel = telHref(phone);
   // Display only: the booking itself is already saved. Ignore anything that isn't a date.
   const bookedRaw = typeof sp.booked === "string" ? new Date(sp.booked) : null;
   const booked = bookedRaw && !Number.isNaN(bookedRaw.getTime()) ? bookedRaw : null;
@@ -31,6 +34,11 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
         {messenger && (
           <p className="text-sm">
             {t.thanksFaster} <a href={messenger} className="font-medium text-cm-blue underline">{t.thanksMessenger}</a>.
+          </p>
+        )}
+        {tel && (
+          <p className="text-sm">
+            {t.thanksCall} <a href={tel} className="font-semibold text-cm-blue underline">{phone}</a>.
           </p>
         )}
         <Link href={`${pagePath(from)}${code ? `?c=${code}` : ""}`} className="btn-secondary">{t.back}</Link>

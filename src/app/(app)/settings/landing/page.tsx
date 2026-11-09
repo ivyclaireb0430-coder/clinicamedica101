@@ -11,7 +11,7 @@ import { saveLandingSettings } from "../actions";
 const KEYS = [
   "landingEnabled", "landingHeadline", "landingSubheadline", "landingOffer", "landingPromoName", "landingPromoOldPrice", "landingPromoPrice", "landingPromoDesc", "landingBenefits", "landingFaq",
   "landingCta", "landingFeeNote", "landingShowFees", "landingShowTestimonials", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio",
-  "landingDoctorBioEn", "landingPromoDescEn", "landingFeeNoteEn",
+  "landingDoctorBioEn", "landingPromoDescEn", "landingFeeNoteEn", "clinicPhone", "clinicHours", "clinicHoursEn",
 ] as const;
 
 export default async function LandingSettings({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
@@ -105,6 +105,8 @@ export default async function LandingSettings({ searchParams }: { searchParams: 
         </fieldset>
         <label className="block"><span className="label">Bakit kami (isa bawat linya)</span><textarea className="input" name="landingBenefits" rows={5} maxLength={1500} defaultValue={v.landingBenefits} /></label>
         <label className="block"><span className="label">FAQ (isa bawat linya: Tanong | Sagot)</span><textarea className="input font-mono text-xs" name="landingFaq" rows={6} maxLength={4000} defaultValue={v.landingFaq} /></label>
+        <label className="block"><span className="label">Contact number ng clinic (tap-to-call sa page; blank = itago)</span><input className="input" name="clinicPhone" maxLength={30} inputMode="tel" defaultValue={v.clinicPhone} /></label>
+        <label className="block"><span className="label">Clinic hours (text lang na ipinapakita; ang online booking slots ay galing sa Schedule settings)</span><input className="input" name="clinicHours" maxLength={200} defaultValue={v.clinicHours} /></label>
         <label className="block"><span className="label">Pangalan ng doktor</span><input className="input" name="landingDoctorName" maxLength={80} required defaultValue={v.landingDoctorName} /></label>
         <label className="block"><span className="label">Title / specialty ng doktor</span><input className="input" name="landingDoctorTitle" maxLength={150} defaultValue={v.landingDoctorTitle} /></label>
         <label className="block"><span className="label">Tungkol sa doktor</span><textarea className="input" name="landingDoctorBio" rows={4} maxLength={1200} defaultValue={v.landingDoctorBio} /></label>
@@ -112,6 +114,7 @@ export default async function LandingSettings({ searchParams }: { searchParams: 
           <legend className="px-1 font-medium">English versions (para sa /en pages)</legend>
           <label className="block"><span className="label">About the doctor</span><textarea className="input" name="landingDoctorBioEn" rows={3} maxLength={1200} defaultValue={v.landingDoctorBioEn} /></label>
           <label className="block"><span className="label">Promo description</span><textarea className="input" name="landingPromoDescEn" rows={3} maxLength={600} defaultValue={v.landingPromoDescEn} /></label>
+          <label className="block"><span className="label">Clinic hours</span><input className="input" name="clinicHoursEn" maxLength={200} defaultValue={v.clinicHoursEn} /></label>
           <label className="block"><span className="label">Fee note (Senior/PWD)</span><input className="input" name="landingFeeNoteEn" maxLength={250} defaultValue={v.landingFeeNoteEn} /></label>
         </fieldset>
         <label className="block"><span className="label">Button text</span><input className="input" name="landingCta" maxLength={60} required defaultValue={v.landingCta} /></label>
