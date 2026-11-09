@@ -60,7 +60,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
   const error = typeof sp.error === "string" ? sp.error : null;
   const code = campaignCodeFrom(sp);
   const keys = [
-    "landingEnabled", "clinicName", "clinicAddress", "landingHeadline", "landingSubheadline", "landingOffer", "landingBenefits",
+    "landingEnabled", "clinicName", "clinicAddress", "landingHeadline", "landingSubheadline", "landingOffer", "landingPromoName", "landingPromoOldPrice", "landingPromoPrice", "landingPromoDesc", "landingBenefits",
     "landingFaq", "landingCta", "landingFeeNote", "landingShowFees", "landingShowTestimonials", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio",
   ] as const;
   const [values, campaign] = await Promise.all([Promise.all(keys.map((k) => getSetting(k))), campaignByCode(code)]);
@@ -86,6 +86,9 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
   const benefits = lines(v.landingBenefits);
   const faq = parseFaq(v.landingFaq);
   const doctor = v.landingDoctorName;
+  const promoPrice = Number(v.landingPromoPrice);
+  const promoOld = Number(v.landingPromoOldPrice);
+  const promo = v.landingPromoName ? { name: v.landingPromoName, price: promoPrice > 0 ? promoPrice : null, old: promoOld > promoPrice ? promoOld : null } : null;
 
   return (
     <div className="bg-white text-slate-800">
@@ -172,6 +175,31 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {/* Featured promo */}
+        {promo && (
+          <section className="mx-auto max-w-6xl px-4 pb-12">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cm-red to-cm-redDark p-6 text-white shadow-xl sm:p-10">
+              <Leaf className="pointer-events-none absolute -right-8 -top-4 w-64 text-white/10" />
+              <div className="relative grid items-center gap-6 md:grid-cols-[1.3fr_1fr]">
+                <div>
+                  <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-cm-red">Promo ngayon</span>
+                  <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">{promo.name}</h2>
+                  <p className="mt-3 max-w-xl leading-relaxed text-red-50">{v.landingPromoDesc}</p>
+                </div>
+                <div className="rounded-2xl bg-white p-6 text-center text-slate-800 shadow-lg">
+                  {promo.old && <div className="text-lg text-slate-400 line-through">{formatPhp(promo.old)}</div>}
+                  {promo.price && <div className="text-5xl font-extrabold text-cm-red">{formatPhp(promo.price)}</div>}
+                  {promo.old && promo.price && (
+                    <div className="mt-1 text-sm font-semibold text-cm-green">Tipid {formatPhp(promo.old - promo.price)}</div>
+                  )}
+                  <div className="mt-1 text-xs text-slate-500">+ consultation fee</div>
+                  <a href="#form" className={`${redBtn} mt-4 w-full`}>I-avail ang promo</a>
+                </div>
+              </div>
+            </div>
           </section>
         )}
 
@@ -286,6 +314,12 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
                     </select>
                   </label>
                 </div>
+                {promo && (
+                  <label className="flex items-start gap-2.5 rounded-xl border-2 border-cm-red/20 bg-red-50/50 p-3 text-sm">
+                    <input type="checkbox" name="promoInterest" defaultChecked className="mt-0.5 h-4 w-4 accent-cm-red" />
+                    <span>Interesado ako sa <b>{promo.name}</b> promo{promo.price ? ` (${formatPhp(promo.price)})` : ""}</span>
+                  </label>
+                )}
                 {/* Honeypot for bots: hidden from people and screen readers. */}
                 <div aria-hidden="true" className="absolute -left-[9999px] h-0 overflow-hidden">
                   <label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label>

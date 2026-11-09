@@ -8,7 +8,7 @@ import { BackLink, PageHeader } from "@/components/ui";
 import { saveLandingSettings } from "../actions";
 
 const KEYS = [
-  "landingEnabled", "landingHeadline", "landingSubheadline", "landingOffer", "landingBenefits", "landingFaq",
+  "landingEnabled", "landingHeadline", "landingSubheadline", "landingOffer", "landingPromoName", "landingPromoOldPrice", "landingPromoPrice", "landingPromoDesc", "landingBenefits", "landingFaq",
   "landingCta", "landingFeeNote", "landingShowFees", "landingShowTestimonials", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio",
 ] as const;
 
@@ -67,6 +67,15 @@ export default async function LandingSettings({ searchParams }: { searchParams: 
         <label className="block"><span className="label">Headline</span><input className="input" name="landingHeadline" maxLength={200} required defaultValue={v.landingHeadline} /></label>
         <label className="block"><span className="label">Sub-headline</span><textarea className="input" name="landingSubheadline" rows={2} maxLength={500} defaultValue={v.landingSubheadline} /></label>
         <label className="block"><span className="label">Offer / promo (optional, naka-highlight)</span><input className="input" name="landingOffer" maxLength={200} defaultValue={v.landingOffer} placeholder="Hal. ₱500 off sa first consultation ngayong Nobyembre" /></label>
+        <fieldset className="space-y-3 rounded-xl border border-slate-200 p-3">
+          <legend className="px-1 font-medium">Featured promo (iwanang blangko ang pangalan para itago)</legend>
+          <label className="block"><span className="label">Pangalan ng service</span><input className="input" name="landingPromoName" maxLength={80} defaultValue={v.landingPromoName} /></label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block"><span className="label">Dating presyo (₱)</span><input className="input" name="landingPromoOldPrice" type="number" min={0} defaultValue={v.landingPromoOldPrice} /></label>
+            <label className="block"><span className="label">Promo price (₱)</span><input className="input" name="landingPromoPrice" type="number" min={0} defaultValue={v.landingPromoPrice} /></label>
+          </div>
+          <label className="block"><span className="label">Description</span><textarea className="input" name="landingPromoDesc" rows={3} maxLength={600} defaultValue={v.landingPromoDesc} /></label>
+        </fieldset>
         <label className="block"><span className="label">Bakit kami (isa bawat linya)</span><textarea className="input" name="landingBenefits" rows={5} maxLength={1500} defaultValue={v.landingBenefits} /></label>
         <label className="block"><span className="label">FAQ (isa bawat linya: Tanong | Sagot)</span><textarea className="input font-mono text-xs" name="landingFaq" rows={6} maxLength={4000} defaultValue={v.landingFaq} /></label>
         <label className="block"><span className="label">Pangalan ng doktor</span><input className="input" name="landingDoctorName" maxLength={80} required defaultValue={v.landingDoctorName} /></label>

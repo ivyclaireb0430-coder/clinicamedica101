@@ -42,6 +42,9 @@ describe("landing page funnel", () => {
   it("writes a front desk note without the health concern", () => {
     const note = inquiryNote({ preferredTime: "SATURDAY", contactMethod: "VIBER" }, "Nov promo");
     expect(note).toBe("Web form (Nov promo): gusto ng schedule sabado, contact via Viber.");
+    expect(inquiryNote({ preferredTime: "ANY", contactMethod: "CALL", promoInterest: "on" }, null, "Vector Scan")).toBe(
+      "Web form: gusto ng schedule kahit kailan, contact via Tawag. Interesado sa Vector Scan promo.",
+    );
   });
 
   it("rate limits per key within a window", () => {

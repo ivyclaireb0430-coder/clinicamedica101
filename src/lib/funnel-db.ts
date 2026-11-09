@@ -41,7 +41,7 @@ export async function landingVisits(start: string, end: string) {
  * that has not become a patient, update that one instead of creating a duplicate.
  */
 export async function saveWebInquiry(input: LandingInquiry, campaign: { id: string; name: string } | null, now = new Date()) {
-  const note = inquiryNote(input, campaign?.name);
+  const note = inquiryNote(input, campaign?.name, await getSetting("landingPromoName"));
   const existing = await db.lead.findFirst({
     where: { mobile: input.mobile, stage: { not: "LOST" }, patient: null },
     orderBy: { createdAt: "desc" },

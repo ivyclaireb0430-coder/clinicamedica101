@@ -32,7 +32,13 @@ export const SETTING_DEFAULTS = {
   landingHeadline: "Matagal na bang may iniinda? Hanapin natin ang ugat, hindi lang ang sintomas.",
   landingSubheadline:
     "Complementary medicine consultation sa Centuria Medical Makati. Isang doktor na makikinig sa buong kwento ninyo at gagawa ng plano para sa inyo.",
-  landingOffer: "", // e.g. "₱500 off sa first consultation ngayong buwan" (shown as a highlighted banner when set)
+  landingOffer: "PROMO: Vector Scan ₱3,000 na lang (dati ₱16,000), dagdag sa consultation fee.", // highlighted banner in the hero; blank hides it
+  // Featured service/promo section; blank name hides it. Prices are whole pesos.
+  landingPromoName: "Vector Scan",
+  landingPromoOldPrice: "16000",
+  landingPromoPrice: "3000",
+  landingPromoDesc:
+    "Isang non-invasive na scan na bahagi ng integrative assessment ni Dr. Lim. Tumutulong itong makita ang mas buong larawan ng inyong kalusugan, para mas tugma sa inyo ang plano. Hiwalay ang consultation fee.",
   landingBenefits:
     "Mahabang consultation, hindi minamadali\nPlano na swak sa inyong kondisyon at budget\nMay follow-up para masubaybayan ang progress ninyo\nNasa Makati, malapit sa Kalayaan Ave",
   landingFaq:

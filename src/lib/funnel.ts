@@ -72,16 +72,22 @@ export const landingInquirySchema = z.object({
   concern: optional(300),
   preferredTime: z.enum(PREFERRED_TIMES.map((t) => t.key) as [string, ...string[]]).default("ANY"),
   contactMethod: z.enum(CONTACT_METHODS.map((t) => t.key) as [string, ...string[]]).default("CALL"),
+  promoInterest: z.literal("on").optional(),
   consent: z.literal("on", { errorMap: () => ({ message: "Kailangan ang pahintulot sa Privacy Notice para makapag-inquire" }) }),
 });
 
 export type LandingInquiry = z.infer<typeof landingInquirySchema>;
 
 /** Front desk note for a web inquiry. No health information (the concern is stored encrypted, separately). */
-export function inquiryNote(i: Pick<LandingInquiry, "preferredTime" | "contactMethod">, campaignName?: string | null): string {
+export function inquiryNote(
+  i: Pick<LandingInquiry, "preferredTime" | "contactMethod" | "promoInterest">,
+  campaignName?: string | null,
+  promoName?: string | null,
+): string {
   const time = PREFERRED_TIMES.find((t) => t.key === i.preferredTime)?.label ?? i.preferredTime;
   const method = CONTACT_METHODS.find((t) => t.key === i.contactMethod)?.label ?? i.contactMethod;
-  return `Web form${campaignName ? ` (${campaignName})` : ""}: gusto ng schedule ${time.toLowerCase()}, contact via ${method}.`;
+  const promo = i.promoInterest && promoName ? ` Interesado sa ${promoName} promo.` : "";
+  return `Web form${campaignName ? ` (${campaignName})` : ""}: gusto ng schedule ${time.toLowerCase()}, contact via ${method}.${promo}`;
 }
 
 /**
