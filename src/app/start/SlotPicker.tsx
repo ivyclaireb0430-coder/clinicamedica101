@@ -8,14 +8,14 @@ const TZ = "Asia/Manila";
 
 /** Day chips + time chips. Submits the chosen slot as `slotStart` (ISO), or "" for "call me instead". */
 export function SlotPicker({
-  days, lang, labels,
+  days, labels,
 }: {
   days: Day[];
-  lang: "tl" | "en";
+  lang?: "tl" | "en";
   labels: { title: string; help: string; callMe: string; none: string };
 }) {
-  const locale = lang === "en" ? "en-PH" : "fil-PH";
-  const dayFmt = new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric", timeZone: TZ });
+  // Dates are always in English (owner's choice), even on the Taglish pages.
+  const dayFmt = new Intl.DateTimeFormat("en-PH", { weekday: "short", month: "short", day: "numeric", timeZone: TZ });
   const timeFmt = new Intl.DateTimeFormat("en-PH", { hour: "numeric", minute: "2-digit", timeZone: TZ });
   const [day, setDay] = useState(days[0]?.date ?? "");
   const [slot, setSlot] = useState<string>("");
