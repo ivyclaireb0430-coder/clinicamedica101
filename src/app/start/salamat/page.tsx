@@ -21,7 +21,7 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
   const bookedRaw = typeof sp.booked === "string" ? new Date(sp.booked) : null;
   const booked = bookedRaw && !Number.isNaN(bookedRaw.getTime()) ? bookedRaw : null;
   const when = booked
-    ? new Intl.DateTimeFormat(lang === "en" ? "en-PH" : "fil-PH", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" }).format(booked)
+    ? new Intl.DateTimeFormat("en-PH", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" }).format(booked)
     : "";
   return (
     <main lang={lang === "en" ? "en" : "fil"} className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cm-navy to-cm-blue p-4">
