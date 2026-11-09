@@ -9,7 +9,7 @@ import { saveLandingSettings } from "../actions";
 
 const KEYS = [
   "landingEnabled", "landingHeadline", "landingSubheadline", "landingOffer", "landingBenefits", "landingFaq",
-  "landingCta", "landingShowFees", "landingShowTestimonials",
+  "landingCta", "landingShowFees", "landingShowTestimonials", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio",
 ] as const;
 
 export default async function LandingSettings({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
@@ -69,6 +69,9 @@ export default async function LandingSettings({ searchParams }: { searchParams: 
         <label className="block"><span className="label">Offer / promo (optional, naka-highlight)</span><input className="input" name="landingOffer" maxLength={200} defaultValue={v.landingOffer} placeholder="Hal. ₱500 off sa first consultation ngayong Nobyembre" /></label>
         <label className="block"><span className="label">Bakit kami (isa bawat linya)</span><textarea className="input" name="landingBenefits" rows={5} maxLength={1500} defaultValue={v.landingBenefits} /></label>
         <label className="block"><span className="label">FAQ (isa bawat linya: Tanong | Sagot)</span><textarea className="input font-mono text-xs" name="landingFaq" rows={6} maxLength={4000} defaultValue={v.landingFaq} /></label>
+        <label className="block"><span className="label">Pangalan ng doktor</span><input className="input" name="landingDoctorName" maxLength={80} required defaultValue={v.landingDoctorName} /></label>
+        <label className="block"><span className="label">Title / specialty ng doktor</span><input className="input" name="landingDoctorTitle" maxLength={150} defaultValue={v.landingDoctorTitle} /></label>
+        <label className="block"><span className="label">Tungkol sa doktor</span><textarea className="input" name="landingDoctorBio" rows={4} maxLength={1200} defaultValue={v.landingDoctorBio} /></label>
         <label className="block"><span className="label">Button text</span><input className="input" name="landingCta" maxLength={60} required defaultValue={v.landingCta} /></label>
         <label className="flex items-center gap-2"><input type="checkbox" name="landingShowFees" defaultChecked={v.landingShowFees === "1"} /> Ipakita ang consultation types at fees (galing sa Schedule settings)</label>
         <label className="flex items-center gap-2"><input type="checkbox" name="landingShowTestimonials" defaultChecked={v.landingShowTestimonials === "1"} /> Ipakita ang testimonials (4–5 stars lang, may pahintulot ng pasyente, hindi naka-hide)</label>

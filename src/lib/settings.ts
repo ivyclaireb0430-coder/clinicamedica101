@@ -36,8 +36,12 @@ export const SETTING_DEFAULTS = {
   landingBenefits:
     "Mahabang consultation, hindi minamadali\nPlano na swak sa inyong kondisyon at budget\nMay follow-up para masubaybayan ang progress ninyo\nNasa Makati, malapit sa Kalayaan Ave",
   landingFaq:
-    "Magkano ang consultation? | Makikita ninyo ang fee sa ibaba. Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
-  landingCta: "Mag-inquire / Magpa-schedule",
+    "Magkano ang consultation? | Nakalista ang fees sa page na ito. Sasabihin din namin bago kayo mag-book, walang sorpresa.\nKailangan ba ng referral? | Hindi po. Pwede kayong mag-inquire at mag-book nang direkta.\nPaano kung may iniinom na akong gamot? | Dalhin po ang listahan ng gamot ninyo. Hindi namin kayo pahihintuin nang walang usapan.",
+  landingCta: "Magpa-schedule ng consultation",
+  landingDoctorName: "Dr. Irene Lim",
+  landingDoctorTitle: "Doctor, Clinica Medica 101 Center for Complementary Medicine",
+  landingDoctorBio:
+    "Si Dr. Irene Lim ang personal na humaharap sa bawat consultation. Pinakikinggan niya ang buong kwento ninyo, tinitingnan ang inyong lab results at mga gamot, at ipinapaliwanag nang malinaw ang plano bago kayo magsimula.",
   landingShowFees: "1", // list active consultation types and fees
   landingShowTestimonials: "1", // feedback with testimonial consent, 4–5 stars, not hidden
   lastWebLeadNotifyAt: "",
