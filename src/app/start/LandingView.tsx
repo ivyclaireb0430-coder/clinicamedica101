@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSetting, type SettingKey } from "@/lib/settings";
 import { formatPhp } from "@/lib/time";
-import { CONTACT_METHODS, PREFERRED_TIMES, campaignCodeFrom } from "@/lib/funnel";
+import { CONTACT_METHODS, PREFERRED_TIMES, campaignCodeFrom, telHref } from "@/lib/funnel";
 import { bookableDays, campaignByCode, publicTestimonials, recordLandingVisit, webBookingType } from "@/lib/funnel-db";
 import { SlotPicker } from "./SlotPicker";
 import { UI, pageLang, type FunnelCopy, type LandingPageId } from "@/lib/landing-content";
@@ -11,7 +11,7 @@ import { submitLandingInquiry } from "./actions";
 export type SP = Record<string, string | string[] | undefined>;
 
 const BASE_KEYS = [
-  "landingEnabled", "clinicName", "clinicAddress", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio", "landingDoctorBioEn",
+  "landingEnabled", "clinicName", "clinicAddress", "clinicPhone", "clinicHours", "clinicHoursEn", "landingDoctorName", "landingDoctorTitle", "landingDoctorBio", "landingDoctorBioEn",
   "landingPromoName", "landingPromoOldPrice", "landingPromoPrice", "landingPromoDesc", "landingPromoDescEn", "landingFeeNote",
   "landingFeeNoteEn", "landingShowFees", "landingShowTestimonials",
 ] as const satisfies readonly SettingKey[];
@@ -48,6 +48,12 @@ const Icon = {
   ),
   chat: (c = "h-5 w-5") => (
     <svg viewBox="0 0 24 24" className={c} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z" strokeLinejoin="round" /></svg>
+  ),
+  phone: (c = "h-5 w-5") => (
+    <svg viewBox="0 0 24 24" className={c} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" strokeLinejoin="round" /></svg>
+  ),
+  clock: (c = "h-5 w-5") => (
+    <svg viewBox="0 0 24 24" className={c} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" /></svg>
   ),
   arrow: (c = "h-5 w-5") => (
     <svg viewBox="0 0 24 24" className={c} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -106,6 +112,8 @@ export async function LandingView({
     bookingType ? bookableDays(bookingType.id) : [],
   ]);
   const messenger = messengerLink(code);
+  const tel = telHref(base.clinicPhone);
+  const hours = (en ? base.clinicHoursEn : base.clinicHours) || base.clinicHours;
   const action = submitLandingInquiry.bind(null, campaign?.trackingCode ?? null, pageId);
   const doctor = base.landingDoctorName;
   const promo = showPromo ? base.promo : null;
@@ -149,7 +157,14 @@ export async function LandingView({
               <div className="truncate text-xs text-slate-500">Center for Integrative Medicine</div>
             </div>
           </div>
-          <a href="#form" className="hidden rounded-full bg-cm-red px-5 py-2 text-sm font-semibold text-white hover:bg-cm-redDark sm:inline-flex">{t.schedule}</a>
+          <div className="flex shrink-0 items-center gap-2">
+            {tel && (
+              <a href={tel} aria-label={`${t.callUs}: ${base.clinicPhone}`} className="inline-flex items-center gap-1.5 rounded-full border border-cm-blue/30 px-3 py-2 text-sm font-semibold text-cm-blue hover:bg-cm-sky">
+                {Icon.phone("h-4 w-4")} <span className="hidden min-[400px]:inline">{base.clinicPhone}</span>
+              </a>
+            )}
+            <a href="#form" className="hidden rounded-full bg-cm-red px-5 py-2 text-sm font-semibold text-white hover:bg-cm-redDark sm:inline-flex">{t.schedule}</a>
+          </div>
         </div>
       </header>
 
@@ -292,6 +307,13 @@ export async function LandingView({
               <ul className="mt-6 space-y-3 text-sm text-blue-50">
                 <li className="flex gap-2">{Icon.shield("h-5 w-5 shrink-0 text-cm-green")} {t.onlyDoctor(doctor)}</li>
                 <li className="flex gap-2">{Icon.pin("h-5 w-5 shrink-0 text-cm-green")} {base.clinicAddress}</li>
+                {hours && <li className="flex gap-2">{Icon.clock("h-5 w-5 shrink-0 text-cm-green")} {hours}</li>}
+                {tel && (
+                  <li className="flex gap-2">
+                    {Icon.phone("h-5 w-5 shrink-0 text-cm-green")}
+                    <span>{t.callUs}: <a href={tel} className="font-semibold text-white underline">{base.clinicPhone}</a></span>
+                  </li>
+                )}
               </ul>
             </div>
             <div className="min-w-0 rounded-3xl bg-white p-5 shadow-2xl sm:p-7">
@@ -378,6 +400,8 @@ export async function LandingView({
           <img src="/landing/logo.jpg" alt="" width={56} height={56} className="h-14 w-14 rounded-full" />
           <div className="font-semibold text-white">{base.clinicName}</div>
           <div>{base.clinicAddress}</div>
+          {hours && <div>{hours}</div>}
+          {tel && <a href={tel} className="font-semibold text-white underline">{base.clinicPhone}</a>}
           <Link href="/privacy" className="underline">{t.privacy}</Link>
         </div>
       </footer>

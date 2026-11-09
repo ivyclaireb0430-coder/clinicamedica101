@@ -43,10 +43,16 @@ export function parseFaq(text: string): { q: string; a: string }[] {
 
 export const PREFERRED_TIMES = [
   { key: "ANY", label: "Kahit kailan" },
-  { key: "WEEKDAY_AM", label: "Weekday, umaga" },
-  { key: "WEEKDAY_PM", label: "Weekday, hapon" },
-  { key: "SATURDAY", label: "Sabado" },
+  { key: "WEEKDAY_PM", label: "Weekday, hapon (2–5pm)" },
+  { key: "WEEKDAY_EVE", label: "Weekday, gabi (5–9pm)" },
+  { key: "WEEKEND", label: "Sabado o Linggo" },
 ] as const;
+
+/** "0922 875 2899" → "tel:+639228752899"; null when it isn't a PH mobile number. */
+export function telHref(phone: string): string | null {
+  const n = normalizePhMobile(phone);
+  return n ? `tel:+63${n.slice(1)}` : null;
+}
 
 export const CONTACT_METHODS = [
   { key: "CALL", label: "Tawag" },

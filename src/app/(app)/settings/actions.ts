@@ -13,6 +13,7 @@ import { isRole } from "@/lib/roles";
 import { pullFromGoogle } from "@/lib/google";
 import { createReminderTemplate } from "@/lib/messenger/meta";
 import { setSetting } from "@/lib/settings";
+import { normalizePhMobile } from "@/lib/funnel";
 import { sendWeeklySummary } from "@/lib/weekly";
 import { erasePerson } from "@/lib/privacy";
 
@@ -259,6 +260,9 @@ export async function saveLandingSettings(formData: FormData) {
       landingDoctorBioEn: z.string().trim().max(1200),
       landingPromoDescEn: z.string().trim().max(600),
       landingFeeNoteEn: z.string().trim().max(250),
+      clinicPhone: z.string().trim().max(30).refine((p) => p === "" || normalizePhMobile(p) !== null, "Mobile number only, e.g. 0922 875 2899"),
+      clinicHours: z.string().trim().max(200),
+      clinicHoursEn: z.string().trim().max(200),
       landingDoctorName: z.string().trim().min(1).max(80),
       landingDoctorTitle: z.string().trim().max(150),
       landingDoctorBio: z.string().trim().max(1200),
