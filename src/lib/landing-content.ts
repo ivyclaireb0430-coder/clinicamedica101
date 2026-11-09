@@ -156,11 +156,12 @@ export function funnelCopy(funnel: FunnelKey, lang: Lang, x: CopyVars): FunnelCo
           benefits: [
             "Non-invasive na scan",
             `Kasama sa assessment ni ${x.doctor}`,
-            "Ipinapaliwanag ang resulta nang malinaw",
+            `Machine ang nagbabasa ng scan; si ${x.doctor} ang nagpapaliwanag`,
             "Gabay para sa planong tugma sa inyo",
           ],
           faq: [
             { q: `Ano ang ${x.promoName}?`, a: `Isang scan na ginagamit ni ${x.doctor} bilang bahagi ng integrative assessment. Ipapaliwanag niya sa consultation kung paano ito makakatulong sa inyo.` },
+            { q: "Sino ang nagbabasa ng resulta?", a: `Ang machine mismo ang nagbabasa ng scan at naglalabas ng resulta. Si ${x.doctor} ang nag-i-interpret at nagpapaliwanag nito sa inyo, kasama ng inyong kwento, lab results at iba pang findings.` },
             { q: "Magkano lahat?", a: `${x.promoPrice} ang ${x.promoName} (promo, dati ${x.promoOld}). ${fees}` },
             { q: "Kapalit ba ito ng lab tests o ng payo ng ibang doktor ko?", a: "Hindi po. Kasama ito sa assessment at hindi nito pinapalitan ang lab tests o ang payo ng inyong ibang doktor." },
             { q: "Kailangan ba ng referral?", a: "Hindi po. Pwede kayong mag-inquire at magpa-schedule nang direkta." },
@@ -171,9 +172,10 @@ export function funnelCopy(funnel: FunnelKey, lang: Lang, x: CopyVars): FunnelCo
           headline: `${x.promoName}: a fuller picture of your health, now only ${x.promoPrice}`,
           sub: `Part of ${x.doctor}'s integrative assessment at Centuria Medical Makati. Promo price ${x.promoPrice} (regular ${x.promoOld}), plus the consultation fee.`,
           offer: `PROMO: ${x.promoName} for only ${x.promoPrice} (regular ${x.promoOld}).`,
-          benefits: ["Non-invasive scan", `Part of ${x.doctor}'s assessment`, "Results explained clearly", "Guides a plan that fits you"],
+          benefits: ["Non-invasive scan", `Part of ${x.doctor}'s assessment`, `Read by the machine, interpreted by ${x.doctor}`, "Guides a plan that fits you"],
           faq: [
             { q: `What is the ${x.promoName}?`, a: `A scan ${x.doctor} uses as part of an integrative assessment. She will explain during your consultation how it can help in your case.` },
+            { q: "Who reads the results?", a: `The machine itself reads the scan and produces the results. ${x.doctor} then interprets and explains them to you, together with your history, lab results and other findings.` },
             { q: "How much is it in total?", a: `The ${x.promoName} is ${x.promoPrice} (promo, regular ${x.promoOld}). ${fees}` },
             { q: "Does it replace lab tests or my other doctors' advice?", a: "No. It is part of the assessment and does not replace lab tests or advice from your other doctors." },
             { q: "Do I need a referral?", a: "No. You can inquire and book directly." },
