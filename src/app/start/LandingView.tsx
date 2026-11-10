@@ -319,7 +319,11 @@ export async function LandingView({
             <div className="min-w-0 rounded-3xl bg-white p-5 shadow-2xl sm:p-7">
               {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
               <form action={action} className="space-y-4">
-                <SlotPicker days={days} lang={lang} labels={{ title: t.pickTitle, help: t.pickHelp, callMe: t.callMe, none: t.noSlots }} />
+                <SlotPicker
+                  days={days}
+                  labels={{ title: t.pickTitle, help: t.pickHelp, callMe: t.callMe, none: t.noSlots, when: t.when, required: t.pickRequired, chosen: t.pickChosen }}
+                  times={PREFERRED_TIMES.map((o) => ({ key: o.key, label: t.times[o.key] }))}
+                />
                 <p className="pt-1 text-base font-bold text-cm-navy">{t.detailsTitle}</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label><span className="label">{t.firstName}</span><input className="input" name="firstName" required maxLength={80} autoComplete="given-name" /></label>
@@ -331,18 +335,11 @@ export async function LandingView({
                   <span className="label">{t.concern}</span>
                   <textarea className="input" name="concern" rows={3} maxLength={300} placeholder={t.concernPh} />
                 </label>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label><span className="label">{t.when}</span>
-                    <select className="input" name="preferredTime" defaultValue="ANY">
-                      {PREFERRED_TIMES.map((o) => <option key={o.key} value={o.key}>{t.times[o.key]}</option>)}
-                    </select>
-                  </label>
-                  <label><span className="label">{t.how}</span>
-                    <select className="input" name="contactMethod" defaultValue="CALL">
-                      {CONTACT_METHODS.map((o) => <option key={o.key} value={o.key}>{t.methods[o.key]}</option>)}
-                    </select>
-                  </label>
-                </div>
+                <label className="block"><span className="label">{t.how}</span>
+                  <select className="input" name="contactMethod" defaultValue="CALL">
+                    {CONTACT_METHODS.map((o) => <option key={o.key} value={o.key}>{t.methods[o.key]}</option>)}
+                  </select>
+                </label>
                 {promo && (
                   <label className="flex items-start gap-2.5 rounded-xl border-2 border-cm-red/20 bg-red-50/50 p-3 text-sm">
                     <input type="checkbox" name="promoInterest" defaultChecked className="mt-0.5 h-4 w-4 accent-cm-red" />
