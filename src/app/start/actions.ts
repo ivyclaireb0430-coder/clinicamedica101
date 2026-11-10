@@ -34,6 +34,9 @@ export async function submitLandingInquiry(code: string | null, pageIdRaw: strin
   if (!parsed.success) back(inquiryErrorMessage(String(parsed.error.issues[0]?.path[0] ?? ""), lang));
   const data = parsed.data!;
 
+  // A definite date and time is required, unless the visitor asked to be called instead.
+  if (!data.slotStart && formData.get("callMe") !== "1" && (await webBookingType())) back(inquiryErrorMessage("slotStart", lang));
+
   // Self-booking: check the slot before saving anything, then book it right after the lead is saved.
   const type = data.slotStart ? await webBookingType() : null;
   if (data.slotStart && (!type || !(await isOpenSlot(type.id, data.slotStart)))) back(inquiryErrorMessage("taken", lang));

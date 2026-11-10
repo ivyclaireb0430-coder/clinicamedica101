@@ -128,3 +128,16 @@ describe("self-booking", async () => {
     expect(schema.safeParse({ ...base, slotStart: "tomorrow-ish" }).success).toBe(false);
   });
 });
+
+describe("booking calendar", async () => {
+  const { calendarWeeks } = await import("@/app/start/SlotPicker");
+  it("lays the open days out in Sunday-first weeks, with closed days kept in place", () => {
+    // Tue Nov 10 to Mon Nov 16, 2026, with Thu Nov 12 closed
+    const weeks = calendarWeeks(["2026-11-10", "2026-11-11", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-16"]);
+    expect(weeks).toEqual([
+      [null, null, "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14"],
+      ["2026-11-15", "2026-11-16", null, null, null, null, null],
+    ]);
+    expect(calendarWeeks([])).toEqual([]);
+  });
+});
