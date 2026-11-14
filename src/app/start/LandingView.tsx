@@ -33,7 +33,7 @@ export async function loadLandingBase(): Promise<LandingBase> {
 }
 
 // Small inline icons (no icon library in the project).
-const Icon = {
+export const Icon = {
   check: (c = "h-5 w-5") => (
     <svg viewBox="0 0 24 24" className={c} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
   ),
@@ -60,7 +60,7 @@ const Icon = {
   ),
 };
 
-function Leaf({ className }: { className?: string }) {
+export function Leaf({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 120 60" className={className} aria-hidden="true">
       <path d="M2 58C20 20 60 4 118 2 90 18 70 44 2 58z" fill="currentColor" />
@@ -68,7 +68,7 @@ function Leaf({ className }: { className?: string }) {
   );
 }
 
-const redBtn =
+export const redBtn =
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-cm-red px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-cm-red/30 transition hover:bg-cm-redDark focus:outline-none focus:ring-4 focus:ring-cm-red/30";
 
 export function messengerLink(code: string | null) {

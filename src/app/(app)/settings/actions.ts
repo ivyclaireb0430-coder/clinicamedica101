@@ -276,3 +276,23 @@ export async function saveLandingSettings(formData: FormData) {
   revalidatePath("/start");
   redirect("/settings/landing?saved=1");
 }
+
+export async function saveWebsiteSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const d = z
+    .object({
+      siteHeadline: z.string().trim().min(1).max(200),
+      siteHeadlineEn: z.string().trim().min(1).max(200),
+      siteIntro: z.string().trim().max(600),
+      siteIntroEn: z.string().trim().max(600),
+      siteServices: z.string().max(5000),
+      siteServicesEn: z.string().max(5000),
+    })
+    .parse(Object.fromEntries(formData));
+  await setSetting("siteEnabled", formData.get("siteEnabled") === "on" ? "1" : "0");
+  for (const [key, value] of Object.entries(d)) await setSetting(key as keyof typeof d, value.trim());
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "website" });
+  revalidatePath("/clinic");
+  revalidatePath("/clinic/en");
+  redirect("/settings/website?saved=1");
+}

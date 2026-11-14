@@ -62,6 +62,29 @@ export const SETTING_DEFAULTS = {
   landingShowFees: "1", // list active consultation types and fees
   landingShowTestimonials: "1", // feedback with testimonial consent, 4–5 stars, not hidden
   lastWebLeadNotifyAt: "",
+  // Public clinic website at /clinic (Taglish) and /clinic/en. Edited in Settings → Website.
+  // Services: one per line, "Name | Description | link" (link: consultation, vector-scan or start).
+  siteEnabled: "1",
+  siteHeadline: "Integrative medicine sa Makati: hinahanap ang ugat, hindi lang ang sintomas",
+  siteHeadlineEn: "Integrative medicine in Makati: looking for the root, not just the symptoms",
+  siteIntro:
+    "Ang Clinica Medica 101 Center for Integrative Medicine ay clinic sa Centuria Medical Makati. Pinakikinggan namin ang buong kwento ninyo at gumagawa ng planong tugma sa inyo.",
+  siteIntroEn:
+    "Clinica Medica 101 Center for Integrative Medicine is a clinic at Centuria Medical Makati. We listen to your whole story and build a plan that fits you.",
+  siteServices: [
+    "Integrative Medicine Consultation | Mahabang one-on-one na consultation sa doktor. Pinakikinggan ang buong kwento ninyo, tinitingnan ang lab results at mga gamot, at hinahanap ang mga posibleng ugat ng inyong iniinda. | consultation",
+    "Vector Scan | Non-invasive na scan na bahagi ng integrative assessment. Tumutulong itong makita ang mas buong larawan ng inyong kalusugan. Hiwalay ang consultation fee. | vector-scan",
+    "Personalized Treatment Plan | Plano na ginawa para sa inyo, gamit ang mga complementary na treatment na pinili ayon sa inyong kondisyon at budget. Malinaw ang bilang ng sessions at fees bago magsimula. | consultation",
+    "Follow-up at Progress Monitoring | Regular na follow-up para masubaybayan ang inyong progress at maayos ang plano kung kailangan. | consultation",
+    "Prevention at Wellness | Para sa mga gustong mapanatiling maayos ang kalusugan at mas maintindihan ang sariling katawan, kahit walang iniindang sakit. | consultation",
+  ].join("\n"),
+  siteServicesEn: [
+    "Integrative Medicine Consultation | An unhurried one-on-one consultation with the doctor. We listen to your whole story, review your lab results and medicines, and look for the possible root causes of what you feel. | consultation",
+    "Vector Scan | A non-invasive scan that is part of the integrative assessment. It helps build a fuller picture of your health. The consultation fee is separate. | vector-scan",
+    "Personalized Treatment Plan | A plan made for you, using complementary treatments chosen for your condition and budget. The number of sessions and the fees are clear before you start. | consultation",
+    "Follow-up and Progress Monitoring | Regular follow-ups to track your progress and adjust the plan when needed. | consultation",
+    "Prevention and Wellness | For people who want to stay healthy and understand their own body better, even without a current illness. | consultation",
+  ].join("\n"),
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
