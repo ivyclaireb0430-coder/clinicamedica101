@@ -9,6 +9,14 @@ import { aiApiKey, aiUsageToday } from "@/lib/messenger/ai-context";
 import { AiTester } from "./AiTester";
 import { META_FIELDS, SECRET_FIELDS, fieldsFromServer, loadStoredMetaCreds, type MetaField } from "@/lib/messenger/meta-creds";
 
+const FB_ERRORS: Record<string, string> = {
+  appid: "App ID (numero lang)",
+  pageid: "Page ID (numero lang)",
+  secret: "App Secret (32 na letra at numero)",
+  token: "Page access token (nagsisimula sa EAA)",
+  username: "Page username (walang @ o space)",
+};
+
 export default async function MessengerSettings({ searchParams }: { searchParams: Promise<{ saved?: string; template?: string; template_error?: string; key_error?: string; fb_error?: string }> }) {
   await requirePermission("settings:manage");
   const sp = await searchParams;
@@ -30,7 +38,7 @@ export default async function MessengerSettings({ searchParams }: { searchParams
       <PageHeader title="Messenger & reminders" />
       {sp.saved && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Saved.</p>}
       {sp.template && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Reminder template created on Meta.</p>}
-      {sp.fb_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang mali ang {sp.fb_error === "appid" ? "App ID" : "Page ID"}. Numero lang dapat ito.</p>}
+      {sp.fb_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang mali ang {FB_ERRORS[sp.fb_error] ?? "Facebook key"}. Baka na-autofill ng browser ang email o password; burahin at ilagay ang tamang value.</p>}
       {sp.key_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang hindi buo ang API key. Dapat nagsisimula ito sa sk-ant- at walang ibang kasama.</p>}
       {sp.template_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Meta error: {sp.template_error}</p>}
 
@@ -80,7 +88,10 @@ export default async function MessengerSettings({ searchParams }: { searchParams
                     id={k}
                     name={k}
                     type={secret ? "password" : "text"}
-                    autoComplete="off"
+                    // Stop browsers from filling a saved login (email/password) into these fields.
+                    autoComplete={secret ? "new-password" : "off"}
+                    data-1p-ignore
+                    data-lpignore="true"
                     className="input"
                     disabled={onServer}
                     placeholder={saved ? (secret ? "naka-save (iwanang blangko para hindi palitan)" : fbStored[k]) : ""}
@@ -108,7 +119,7 @@ export default async function MessengerSettings({ searchParams }: { searchParams
             <form action={saveAiApiKey} className="flex flex-wrap items-end gap-2">
               <div className="min-w-64 flex-1">
                 <label className="label" htmlFor="apiKey">{aiReady ? "Palitan ang Anthropic API key" : "I-paste ang Anthropic API key (nagsisimula sa sk-ant-)"}</label>
-                <input id="apiKey" name="apiKey" type="password" autoComplete="off" className="input" placeholder="sk-ant-..." required />
+                <input id="apiKey" name="apiKey" type="password" autoComplete="new-password" data-1p-ignore data-lpignore="true" className="input" placeholder="sk-ant-..." required />
               </div>
               <button className="btn">I-save ang key</button>
               {aiReady && (
