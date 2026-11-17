@@ -11,7 +11,7 @@ export const SETTING_DEFAULTS = {
   automationEnabled: "1", // Messenger auto-replies on/off
   // AI replies for Messenger free text (needs ANTHROPIC_API_KEY). Off until the owner turns it on.
   aiRepliesEnabled: "0",
-  aiDailyLimit: "300", // max AI replies per day (cost cap); over the cap, the scripted bot hands off to staff
+  aiDailyLimit: "100", // max AI replies per day (cost cap); over the cap, the scripted bot hands off to staff
   aiUsage: "", // "YYYY-MM-DD:count"
   remindersEnabled: "1",
   smsEnabled: "1", // owner approved SMS; only sends once SEMAPHORE_API_KEY is set
