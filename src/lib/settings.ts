@@ -16,6 +16,9 @@ export const SETTING_DEFAULTS = {
   aiHealthInquiries: "1", // AI also answers health inquiries (no medical advice; invites to book). Owner asked for this, Nov 17 2026.
   aiDailyLimit: "100", // max AI replies per day (cost cap); over the cap, the scripted bot hands off to staff
   aiUsage: "", // "YYYY-MM-DD:count"
+  // Last webhook deliveries from Meta, for the setup status in Settings → Messenger (ISO times).
+  messengerLastOkAt: "",
+  messengerLastBadSigAt: "",
   remindersEnabled: "1",
   smsEnabled: "1", // owner approved SMS; only sends once SEMAPHORE_API_KEY is set
   utilityTemplateName: "", // approved Messenger UTILITY template for reminders outside 24h

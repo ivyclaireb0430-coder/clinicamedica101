@@ -1,5 +1,6 @@
 import { requirePermission } from "@/lib/session";
 import { getSetting } from "@/lib/settings";
+import { formatDateTime } from "@/lib/time";
 import { messengerConfigured, REMINDER_TEMPLATE_BODY } from "@/lib/messenger/meta";
 import { googleConfigured } from "@/lib/google";
 import { BackLink, PageHeader } from "@/components/ui";
@@ -74,6 +75,7 @@ export default async function MessengerSettings({ searchParams }: { searchParams
             <div className="break-all">Callback URL: <b className="select-all">{appUrl}/api/webhooks/messenger</b></div>
             <div className="break-all">Verify token: <b className="select-all">{verifyToken || "wala (META_VERIFY_TOKEN)"}</b></div>
           </div>
+          <WebhookStatus />
           <form action={saveFacebookKeys} className="grid gap-2 md:grid-cols-2">
             {(Object.keys(META_FIELDS) as MetaField[]).map((k) => {
               const onServer = fbFromServer.has(k);
@@ -174,4 +176,20 @@ export default async function MessengerSettings({ searchParams }: { searchParams
       </div>
     </>
   );
+}
+
+async function WebhookStatus() {
+  const [okAt, badAt] = await Promise.all([getSetting("messengerLastOkAt"), getSetting("messengerLastBadSigAt")]);
+  const ok = okAt ? new Date(okAt) : null;
+  const bad = badAt ? new Date(badAt) : null;
+  if (bad && (!ok || bad > ok)) {
+    return (
+      <p className="rounded-lg bg-red-50 p-2 text-red-700">
+        May message galing Facebook noong {formatDateTime(bad)} pero tinanggihan dahil mali ang App Secret. I-paste ulit ang tamang
+        App Secret mula sa Meta (App settings → Basic → Show) at i-save.
+      </p>
+    );
+  }
+  if (ok) return <p className="rounded-lg bg-emerald-50 p-2 text-emerald-800">Huling message galing Facebook: {formatDateTime(ok)} ✓</p>;
+  return <p className="muted">Wala pang natatanggap na message galing Facebook. Mag-message sa Page para i-test.</p>;
 }
