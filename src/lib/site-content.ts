@@ -2,7 +2,7 @@ import { lines } from "./funnel";
 import type { Lang, LandingPageId } from "./landing-content";
 import { pagePath } from "./landing-content";
 
-// Public clinic website (/clinic and /clinic/en): what the clinic offers, the doctor, fees and how to reach us.
+// Public clinic website (/clinic in English, /clinic/tl in Taglish): what the clinic offers, the doctor, fees and how to reach us.
 // Booking happens on the funnel pages (/start/...), so every "book" button links there.
 // The services list is edited in Settings → Website. Pure helpers here are unit-tested.
 
@@ -34,7 +34,7 @@ export function bookingHref(link: ServiceLink, lang: Lang): string {
 }
 
 export function sitePath(lang: Lang): string {
-  return lang === "en" ? "/clinic/en" : "/clinic";
+  return lang === "en" ? "/clinic" : "/clinic/tl";
 }
 
 /** Google Maps search for the clinic address (opens the Maps app on phones). */

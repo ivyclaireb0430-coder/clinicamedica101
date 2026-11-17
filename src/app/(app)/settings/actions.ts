@@ -293,6 +293,6 @@ export async function saveWebsiteSettings(formData: FormData) {
   for (const [key, value] of Object.entries(d)) await setSetting(key as keyof typeof d, value.trim());
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "website" });
   revalidatePath("/clinic");
-  revalidatePath("/clinic/en");
+  revalidatePath("/clinic/tl");
   redirect("/settings/website?saved=1");
 }

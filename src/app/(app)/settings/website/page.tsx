@@ -26,8 +26,8 @@ export default async function WebsiteSettings({ searchParams }: { searchParams: 
 
       <section className="card mb-4 space-y-2 text-sm">
         <h2>Address ng website</h2>
-        <div><span className="label">Taglish</span><code className="block break-all text-xs">{appUrl}/clinic</code></div>
-        <div><span className="label">English</span><code className="block break-all text-xs">{appUrl}/clinic/en</code></div>
+        <div><span className="label">English (main)</span><code className="block break-all text-xs">{appUrl}/clinic</code></div>
+        <div><span className="label">Taglish</span><code className="block break-all text-xs">{appUrl}/clinic/tl</code></div>
         <p className="muted text-xs">
           Ang doktor, bio, contact number, clinic hours, promo at FAQ ay galing sa <Link href="/settings/landing" className="text-brand-700 underline">Landing page settings</Link>.
           Ang consultation fees ay galing sa <Link href="/settings/schedule" className="text-brand-700 underline">Schedule, fees & closed dates</Link>.
@@ -41,14 +41,14 @@ export default async function WebsiteSettings({ searchParams }: { searchParams: 
       <form action={saveWebsiteSettings} className="card space-y-3 text-sm">
         <h2>Laman ng website</h2>
         <label className="flex items-center gap-2"><input type="checkbox" name="siteEnabled" defaultChecked={v.siteEnabled === "1"} /> Naka-on ang website</label>
-        <label className="block"><span className="label">Headline (Taglish)</span><input className="input" name="siteHeadline" maxLength={200} required defaultValue={v.siteHeadline} /></label>
+        <label className="block"><span className="label">Headline (Taglish, para sa /clinic/tl)</span><input className="input" name="siteHeadline" maxLength={200} required defaultValue={v.siteHeadline} /></label>
         <label className="block"><span className="label">Intro (Taglish)</span><textarea className="input" name="siteIntro" rows={3} maxLength={600} defaultValue={v.siteIntro} /></label>
         <label className="block">
           <span className="label">Services (Taglish), {count.tl} ngayon. Isa bawat linya: Pangalan | Paliwanag | link</span>
           <textarea className="input font-mono text-xs" name="siteServices" rows={8} maxLength={5000} defaultValue={v.siteServices} />
         </label>
         <fieldset className="space-y-3 rounded-xl border border-slate-200 p-3">
-          <legend className="px-1 font-medium">English (para sa /clinic/en)</legend>
+          <legend className="px-1 font-medium">English (para sa /clinic, ang main na website)</legend>
           <label className="block"><span className="label">Headline</span><input className="input" name="siteHeadlineEn" maxLength={200} required defaultValue={v.siteHeadlineEn} /></label>
           <label className="block"><span className="label">Intro</span><textarea className="input" name="siteIntroEn" rows={3} maxLength={600} defaultValue={v.siteIntroEn} /></label>
           <label className="block">

@@ -61,7 +61,7 @@ export async function siteMetadata(lang: Lang): Promise<Metadata> {
     description: intro || headline,
     robots: { index: true, follow: true },
     icons: { icon: "/landing/logo.jpg" },
-    alternates: { languages: { "fil-PH": "/clinic", "en-US": "/clinic/en" } },
+    alternates: { languages: { "en-US": "/clinic", "fil-PH": "/clinic/tl" } },
     openGraph: { title: headline, description: intro, images: ["/landing/doctor.jpg"] },
   };
 }
