@@ -575,3 +575,17 @@ model LandingVisit {
 
   @@unique([day, campaignKey, page])
 }
+
+// Past clinic replies (anonymized) that the owner approved as writing examples for the AI.
+model AiExample {
+  id          String    @id @default(cuid())
+  questionEnc String? // encrypted: the patient's message before the reply (names/contacts removed)
+  replyEnc    String // encrypted: the clinic's reply (names/contacts removed)
+  replyHash   String    @unique // dedupe
+  source      String // INBOX | FACEBOOK
+  approved    Boolean   @default(false)
+  repliedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([approved])
+}

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { decideAiReply, factsText, mentionsHealth, prepareHistory, redact, replyProblems, type ClinicFacts } from "@/lib/messenger/ai";
+import { decideAiReply, factsText, isEmergency, mentionsHealth, prepareHistory, redact, replyProblems, type ClinicFacts } from "@/lib/messenger/ai";
 import { handleMessage, type BotContext, type BotDeps } from "@/lib/messenger/bot";
 import { SETTING_DEFAULTS as S } from "@/lib/settings";
 import { SCRIPTS } from "../prisma/seed-data";
+import { anonymize, extractPairs, replyHash } from "@/lib/messenger/ai-examples";
 
 const scripts = Object.fromEntries(SCRIPTS.map((s) => [s.key, s.body]));
 const facts = factsText({
@@ -44,11 +45,30 @@ describe("AI reply safety", () => {
     expect(replyProblems("Baka ito ay arthritis po", facts)).toContain("medical wording");
   });
 
-  it("never sends a health message to the AI", async () => {
+  it("never sends a health message to the AI when health inquiries are off", async () => {
     const call = vi.fn();
     const d = await decideAiReply({ text: "masakit po ulo ko, ano iinumin?", facts, history: [] }, call);
     expect(call).not.toHaveBeenCalled();
     expect(d).toEqual({ action: "handoff", reply: "" });
+  });
+
+  it("lets the AI answer health inquiries when allowed, and flags the doctor", async () => {
+    const call = vi.fn(async () => ({ action: "answer" as const, reply: "Naiintindihan po namin. Si Dr. Lim po mismo ang titingin nito sa consultation (₱1,000). Gusto n'yo po bang mag-book?" }));
+    const d = await decideAiReply({ text: "masakit po tuhod ko, matutulungan nyo ba?", facts, history: [{ from: "patient", text: "masakit po tuhod ko" }], allowHealth: true }, call);
+    expect(call).toHaveBeenCalled();
+    expect((call.mock.calls[0] as unknown as [{ history: { text: string }[] }])[0].history[0].text).toContain("tuhod");
+    expect(d).toMatchObject({ action: "answer", notifyDoctor: true });
+  });
+
+  it("never sends emergencies to the AI", async () => {
+    const call = vi.fn();
+    expect(isEmergency("hirap po huminga si mama")).toBe(true);
+    expect(await decideAiReply({ text: "chest pain po ngayon", facts, history: [], allowHealth: true }, call)).toEqual({ action: "handoff", reply: "" });
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("rejects promises of a cure", () => {
+    expect(replyProblems("Siguradong gagaling po kayo!", facts)).toContain("promise of results");
   });
 
   it("replaces an unsafe AI reply with the hand-off", async () => {
@@ -79,7 +99,42 @@ const deps = (over: Partial<BotDeps> = {}): BotDeps => ({
   saveMobile: vi.fn(async () => {}), handoff: vi.fn(async () => {}), setStage: vi.fn(async () => {}), ...over,
 });
 
+describe("Style examples from past replies", () => {
+  const t = (fromClinic: boolean, text: string) => ({ fromClinic, text, at: new Date("2026-10-01T00:00:00Z") });
+
+  it("pairs clinic replies with the patient's message and removes names and contacts", () => {
+    const pairs = extractPairs(
+      [t(false, "Hi po magkano consult? 09171234567"), t(true, "Hello Maria! ₱1,000 po ang consultation. Text nyo lang po kami sa 0922 875 2899.")],
+      ["Maria Santos"],
+    );
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].question).toBe("Hi po magkano consult? [mobile]");
+    expect(pairs[0].reply).toBe("Hello [name]! ₱1,000 po ang consultation. Text nyo lang po kami sa [mobile].");
+  });
+
+  it("skips bot replies, very short replies and medicine advice", () => {
+    const bot = "Salamat po sa pag-message sa clinic namin, ano po ang concern?";
+    const pairs = extractPairs(
+      [t(false, "hi"), t(true, bot), t(false, "ok"), t(true, "ok po"), t(false, "masakit ulo"), t(true, "Uminom po muna kayo ng 500mg paracetamol.")],
+      [],
+      new Set([replyHash(bot)]),
+    );
+    expect(pairs).toEqual([]);
+  });
+
+  it("removes links", () => {
+    expect(anonymize("Book here https://x.test/start po", [])).toBe("Book here [link] po");
+  });
+});
+
 describe("Messenger bot with AI", () => {
+  it("answers a health inquiry with the AI and still flags the doctor", async () => {
+    const d = deps({ ai: vi.fn(async () => ({ action: "answer" as const, reply: "Si Dr. Lim po ang titingin nito. Gusto n'yo po bang mag-book?", notifyDoctor: true })) });
+    const r = await handleMessage(ctx(), { step: "IDLE" }, { text: "masakit po likod ko" }, d);
+    expect(r.replies[0].byAi).toBe(true);
+    expect(d.handoff).toHaveBeenCalled();
+  });
+
   it("uses the AI answer for free text the scripts don't match", async () => {
     const d = deps({ ai: vi.fn(async () => ({ action: "answer" as const, reply: "Hindi pa po kami tumatanggap ng HMO." })) });
     const r = await handleMessage(ctx(), { step: "IDLE" }, { text: "HMO po?" }, d);

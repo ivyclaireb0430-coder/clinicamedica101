@@ -120,3 +120,49 @@ export async function fetchProfile(psid: string): Promise<{ firstName?: string; 
     return {};
   }
 }
+
+export type PageThreadMessage = { fromPage: boolean; text: string; at: Date };
+export type PageThread = { participantNames: string[]; messages: PageThreadMessage[] };
+
+/**
+ * Past Messenger conversations of the Page (newest conversations first), each with its messages oldest first.
+ * Used once in a while to collect example replies for the AI. Needs pages_messaging on the Page token.
+ */
+export async function fetchPageThreads(maxThreads = 200, messagesPerThread = 25): Promise<{ threads: PageThread[]; error?: string }> {
+  if (!messengerConfigured()) return { threads: [], error: "Messenger is not configured" };
+  const pageId = process.env.META_PAGE_ID!;
+  const fields = `participants,messages.limit(${messagesPerThread}){message,from,created_time}`;
+  let url: string | null =
+    `${graphBase()}/${pageId}/conversations?platform=messenger&limit=25&fields=${encodeURIComponent(fields)}` +
+    `&access_token=${encodeURIComponent(process.env.META_PAGE_ACCESS_TOKEN ?? "")}`;
+  const threads: PageThread[] = [];
+  type Raw = {
+    data?: {
+      participants?: { data?: { id: string; name?: string }[] };
+      messages?: { data?: { message?: string; from?: { id?: string }; created_time?: string }[] };
+    }[];
+    paging?: { next?: string };
+    error?: { message?: string };
+  };
+  while (url && threads.length < maxThreads) {
+    let json: Raw;
+    try {
+      const res = await fetch(url);
+      json = (await res.json()) as Raw;
+      if (!res.ok) return { threads, error: `Meta ${res.status}: ${json.error?.message ?? "unknown error"}` };
+    } catch (err) {
+      return { threads, error: `Network error: ${(err as Error).message}` };
+    }
+    for (const c of json.data ?? []) {
+      threads.push({
+        participantNames: (c.participants?.data ?? []).filter((p) => p.id !== pageId && p.name).map((p) => p.name!),
+        messages: (c.messages?.data ?? [])
+          .filter((m) => m.message)
+          .map((m) => ({ fromPage: m.from?.id === pageId, text: m.message!, at: new Date(m.created_time ?? 0) }))
+          .reverse(),
+      });
+    }
+    url = json.paging?.next ?? null;
+  }
+  return { threads };
+}

@@ -14,7 +14,7 @@ export default async function MessengerSettings({ searchParams }: { searchParams
   const [automation, reminders, sms, noShowHours, template] = await Promise.all([
     getSetting("automationEnabled"), getSetting("remindersEnabled"), getSetting("smsEnabled"), getSetting("autoNoShowHours"), getSetting("utilityTemplateName"),
   ]);
-  const [aiOn, aiLimit, aiUsed] = await Promise.all([getSetting("aiRepliesEnabled"), getSetting("aiDailyLimit"), aiUsageToday()]);
+  const [aiOn, aiHealth, aiLimit, aiUsed] = await Promise.all([getSetting("aiRepliesEnabled"), getSetting("aiHealthInquiries"), getSetting("aiDailyLimit"), aiUsageToday()]);
   const aiReady = aiConfigured();
   const smsReady = Boolean(process.env.SEMAPHORE_API_KEY);
   const appUrl = process.env.APP_URL ?? "https://your-domain";
@@ -56,13 +56,17 @@ export default async function MessengerSettings({ searchParams }: { searchParams
           <h2>AI replies (Messenger inquiries)</h2>
           <p>
             Kapag hindi tugma sa mga button o keyword ang message (hal. galing sa ad: &quot;interested po&quot;, &quot;may HMO ba?&quot;), ang AI ang
-            sasagot gamit lang ang clinic info: fees, promo, oras, location, services. Hindi ito nagbibigay ng medical advice. Kapag may
-            sintomas, sakit, gamot o resulta sa message, hindi ito ipinapadala sa AI at ipinapasa agad sa doktor.
+            sasagot gamit lang ang clinic info: fees, promo, oras, location, services, at hihikayatin silang mag-book. Hindi ito
+            nagbibigay ng medical advice. Ang emergency ay laging ipinapasa sa doktor na may payong pumunta sa ER.
           </p>
           <div>AI provider key: <b>{aiReady ? "Set" : "Not set yet (ANTHROPIC_API_KEY)"}</b> · Nagamit ngayong araw: <b>{aiUsed}</b> / {aiLimit}</div>
           <form action={saveAiSettings} className="flex flex-wrap items-end gap-3">
             <label className="flex items-center gap-2">
               <input type="checkbox" name="aiRepliesEnabled" defaultChecked={aiOn === "1"} disabled={!aiReady} /> I-on ang AI replies
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="aiHealthInquiries" defaultChecked={aiHealth === "1"} /> Sagutin din ang mga tanong tungkol sa sakit
+              (walang medical advice, iimbitahang mag-book; aabisuhan pa rin ang doktor)
             </label>
             <div>
               <label className="label" htmlFor="aiDailyLimit">Max AI replies bawat araw</label>
@@ -70,6 +74,10 @@ export default async function MessengerSettings({ searchParams }: { searchParams
             </div>
             <button className="btn">Save</button>
           </form>
+          <p>
+            <a className="underline" href="/settings/messenger/examples">Halimbawang reply para sa AI →</a> Pumili ng mga dating reply ng
+            staff para gayahin ng AI ang tono ninyo.
+          </p>
           <p className="muted">Kapag naka-on, idinadagdag sa Privacy Notice na ang mga general na message ay pinoproseso ng AI provider.</p>
           {aiReady && (
             <div className="border-t border-slate-100 pt-3">

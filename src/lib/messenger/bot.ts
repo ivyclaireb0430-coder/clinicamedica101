@@ -187,6 +187,8 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
 async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): Promise<BotResult> {
   // First contact still shows the privacy notice, since the reply was written by the AI provider.
   const notice = ctx.isNewConversation ? `\n\nPrivacy notice: ${ctx.privacyUrl}` : "";
+  // Health inquiry answered by the AI: the doctor still sees it in the inbox.
+  if (decision.notifyDoctor && decision.action !== "handoff") await deps.handoff();
   if (decision.action === "handoff") {
     await deps.handoff();
     if (ctx.isNewConversation && !decision.reply) {

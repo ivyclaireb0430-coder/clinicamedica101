@@ -161,7 +161,9 @@ Kapag walang laman, naka-off ang SMS.
    Kapag okay na, i-check ang "I-on ang AI replies". Awtomatikong nadadagdag sa Privacy Notice ang AI section.
 4. Para i-off agad: alisin ang check. Babalik sa dating scripted bot (ipapasa sa staff ang hindi masagot).
 
-Ang mga message na may sintomas, sakit, gamot o resulta ay hindi ipinapadala sa AI; diretso sa doktor.
+Kapag naka-check ang "Sagutin din ang mga tanong tungkol sa sakit", sasagutin ng AI ang mga ito nang walang medical advice at
+iimbitahang mag-book (consultation o Vector Scan); aabisuhan pa rin ang doktor. Ang emergency ay hindi sinasagot ng AI.
+Sa "Halimbawang reply para sa AI", kunin at aprubahan ang mga dating reply ng staff para gayahin ng AI ang tono ninyo.
 
 ## Step 8. Off-site backup (recommended)
 
