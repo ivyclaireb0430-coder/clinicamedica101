@@ -24,6 +24,25 @@ const SERVICE_ICONS = [
   (c = "h-6 w-6") => svg(c, <><path d="M12 21C7 17 3 13.5 3 9a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 4.5-4 8-9 12z" /></>), // wellness
 ];
 
+// One accent per service card, in turn. Full class names so Tailwind keeps them.
+const ACCENTS = [
+  { tile: "bg-cm-sky text-cm-blue", bar: "border-t-cm-blue", link: "text-cm-blue" },
+  { tile: "bg-cm-mint text-cm-green", bar: "border-t-cm-green", link: "text-[#2f7f34]" },
+  { tile: "bg-cm-coralSoft text-cm-coral", bar: "border-t-cm-coral", link: "text-[#c4472f]" },
+  { tile: "bg-cm-tealSoft text-cm-teal", bar: "border-t-cm-teal", link: "text-cm-teal" },
+  { tile: "bg-cm-goldSoft text-cm-gold", bar: "border-t-cm-gold", link: "text-[#b47c00]" },
+];
+const STEP_COLORS = ["bg-cm-blue", "bg-cm-teal", "bg-cm-coral"];
+
+/** Thin four-colour ribbon in the logo's colours plus gold. */
+function Ribbon() {
+  return (
+    <div className="flex h-1.5" aria-hidden="true">
+      <span className="flex-1 bg-cm-blue" /><span className="flex-1 bg-cm-green" /><span className="flex-1 bg-cm-gold" /><span className="flex-1 bg-cm-red" />
+    </div>
+  );
+}
+
 async function siteText(lang: Lang) {
   const en = lang === "en";
   const [enabled, headline, intro, services] = await Promise.all([
@@ -85,6 +104,7 @@ export async function SiteView({ lang }: { lang: Lang }) {
   return (
     <div lang={en ? "en" : "fil"} className="bg-white text-slate-800">
       <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 backdrop-blur">
+        <Ribbon />
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
           <Link href={sitePath(lang)} className="flex min-w-0 items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,10 +137,14 @@ export async function SiteView({ lang }: { lang: Lang }) {
       <main>
         <section className="relative overflow-hidden bg-gradient-to-br from-cm-navy via-cm-blue to-[#0a73c2] text-white">
           <Leaf className="pointer-events-none absolute -right-10 bottom-0 w-72 text-cm-green/20" />
-          <Leaf className="pointer-events-none absolute -left-16 top-10 w-56 -scale-x-100 text-white/5" />
+          <Leaf className="pointer-events-none absolute -left-16 top-10 w-56 -scale-x-100 text-cm-teal/25" />
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cm-teal/25 blur-3xl" aria-hidden="true" />
+          <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-cm-gold/15 blur-3xl" aria-hidden="true" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pb-14 pt-8 md:grid-cols-[1.15fr_0.85fr] md:pb-20 md:pt-14">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-cm-green">Centuria Medical Makati</p>
+              <p className="inline-flex items-center gap-2 rounded-full bg-cm-gold/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cm-gold ring-1 ring-cm-gold/40">
+                <span className="h-2 w-2 rounded-full bg-cm-gold" /> Centuria Medical Makati
+              </p>
               <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.15] tracking-tight sm:text-5xl">{site.headline}</h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-blue-50 sm:text-lg">{site.intro}</p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -151,15 +175,16 @@ export async function SiteView({ lang }: { lang: Lang }) {
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {site.services.map((s, i) => {
               const isPromo = s.link === "vector-scan" && promo?.price;
+              const a = ACCENTS[i % ACCENTS.length];
               return (
-                <li key={s.name} className="flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+                <li key={s.name} className={`flex flex-col rounded-2xl border border-t-4 border-slate-100 ${a.bar} bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cm-sky text-cm-blue">{SERVICE_ICONS[i % SERVICE_ICONS.length]("h-6 w-6")}</span>
+                    <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${a.tile}`}>{SERVICE_ICONS[i % SERVICE_ICONS.length]("h-6 w-6")}</span>
                     {isPromo && <span className="rounded-full bg-cm-red px-2.5 py-1 text-xs font-bold text-white">{t.promoBadge}</span>}
                   </div>
                   <h3 className="mt-4 text-lg font-semibold text-cm-navy">{s.name}</h3>
                   {s.description && <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-600">{s.description}</p>}
-                  <Link href={bookingHref(s.link, lang)} className="mt-4 inline-flex items-center gap-1.5 self-start font-semibold text-cm-blue hover:underline">
+                  <Link href={bookingHref(s.link, lang)} className={`mt-4 inline-flex items-center gap-1.5 self-start font-semibold ${a.link} hover:underline`}>
                     {isPromo ? t.promoCta : t.serviceCta} {Icon.arrow("h-4 w-4")}
                   </Link>
                 </li>
@@ -168,14 +193,14 @@ export async function SiteView({ lang }: { lang: Lang }) {
           </ul>
         </section>
 
-        <section id="approach" className="scroll-mt-28 bg-cm-mint/60">
+        <section id="approach" className="scroll-mt-28 bg-gradient-to-br from-cm-cream via-cm-goldSoft/60 to-cm-tealSoft">
           <div className="mx-auto max-w-6xl px-4 py-12">
-            <p className="text-center text-sm font-semibold uppercase tracking-wider text-cm-green">{t.approachEyebrow}</p>
+            <p className="text-center text-sm font-semibold uppercase tracking-wider text-cm-teal">{t.approachEyebrow}</p>
             <h2 className="mt-1 text-center text-2xl font-bold text-cm-navy sm:text-3xl">{t.approachTitle}</h2>
             <ol className="mt-8 grid gap-4 md:grid-cols-3">
               {t.approach.map(([title, body], i) => (
                 <li key={title} className="rounded-2xl bg-white p-5 shadow-sm">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cm-blue text-lg font-bold text-white">{i + 1}</span>
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-full ${STEP_COLORS[i % STEP_COLORS.length]} text-lg font-bold text-white`}>{i + 1}</span>
                   <h3 className="mt-3 font-semibold text-cm-navy">{title}</h3>
                   <p className="mt-1 text-sm text-slate-600">{body}</p>
                 </li>
@@ -184,12 +209,13 @@ export async function SiteView({ lang }: { lang: Lang }) {
           </div>
         </section>
 
-        <section id="doctor" className="scroll-mt-28 bg-cm-sky">
+        <section id="doctor" className="relative scroll-mt-28 overflow-hidden bg-cm-sky">
+          <Leaf className="pointer-events-none absolute -right-6 bottom-2 w-56 text-cm-teal/15" />
           <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-12 md:grid-cols-[auto_1fr]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/landing/doctor.jpg" alt={doctor} width={220} height={220} className="mx-auto h-44 w-44 rounded-3xl object-cover shadow-xl ring-4 ring-white md:h-56 md:w-56" />
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-cm-green">{t.meetEyebrow}</p>
+            <img src="/landing/doctor.jpg" alt={doctor} width={220} height={220} className="relative mx-auto h-44 w-44 rounded-3xl object-cover shadow-xl ring-4 ring-cm-gold/60 md:h-56 md:w-56" />
+            <div className="relative">
+              <p className="text-sm font-semibold uppercase tracking-wider text-cm-teal">{t.meetEyebrow}</p>
               <h2 className="mt-1 text-2xl font-bold text-cm-navy sm:text-3xl">{doctor}</h2>
               <p className="text-sm text-slate-600">{base.landingDoctorTitle}</p>
               <p className="mt-4 max-w-2xl leading-relaxed text-slate-700">{bio}</p>
@@ -202,18 +228,18 @@ export async function SiteView({ lang }: { lang: Lang }) {
             <h2 className="text-center text-2xl font-bold text-cm-navy sm:text-3xl">{t.feesTitle}</h2>
             <p className="mt-1 text-center text-sm text-slate-500">{t.feesSub}</p>
             <ul className="mx-auto mt-6 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {types.map((ct) => (
-                <li key={ct.id} className="flex flex-col rounded-2xl border-2 border-cm-blue/15 bg-white p-5 shadow-sm">
+              {types.map((ct, i) => (
+                <li key={ct.id} className={`flex flex-col rounded-2xl border-2 border-t-4 bg-white p-5 shadow-sm ${i % 2 ? "border-cm-teal/20 border-t-cm-teal" : "border-cm-blue/15 border-t-cm-blue"}`}>
                   <div className="font-semibold text-cm-navy">{ct.name}</div>
                   {ct.description && <div className="mt-1 text-sm text-slate-600">{ct.description}</div>}
                   <div className="mt-auto flex items-end justify-between pt-4">
                     <span className="text-sm text-slate-500">{ct.durationMin} {t.minutes}</span>
-                    <span className="text-2xl font-extrabold text-cm-blue">{formatPhp(ct.feePhp)}</span>
+                    <span className={`text-2xl font-extrabold ${i % 2 ? "text-cm-teal" : "text-cm-blue"}`}>{formatPhp(ct.feePhp)}</span>
                   </div>
                 </li>
               ))}
               {promo?.price && (
-                <li className="flex flex-col rounded-2xl border-2 border-cm-red/25 bg-red-50/40 p-5 shadow-sm">
+                <li className="flex flex-col rounded-2xl border-2 border-t-4 border-cm-red/25 border-t-cm-red bg-cm-coralSoft/60 p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-cm-navy">{promo.name}</span>
                     <span className="rounded-full bg-cm-red px-2.5 py-0.5 text-xs font-bold text-white">{t.promoBadge}</span>
@@ -230,7 +256,7 @@ export async function SiteView({ lang }: { lang: Lang }) {
               )}
             </ul>
             {feeNote && (
-              <p className="mx-auto mt-4 flex max-w-5xl items-start gap-2 rounded-2xl bg-cm-mint px-4 py-3 text-sm font-medium text-cm-navy">
+              <p className="mx-auto mt-4 flex max-w-5xl items-start gap-2 rounded-2xl bg-cm-goldSoft px-4 py-3 text-sm font-medium text-cm-navy ring-1 ring-cm-gold/30">
                 {Icon.check("h-5 w-5 shrink-0 text-cm-green")} {feeNote}
               </p>
             )}
@@ -238,13 +264,13 @@ export async function SiteView({ lang }: { lang: Lang }) {
         )}
 
         {testimonials.length > 0 && (
-          <section className="bg-gradient-to-b from-white to-cm-mint/60">
+          <section className="bg-gradient-to-b from-cm-cream to-cm-goldSoft">
             <div className="mx-auto max-w-6xl px-4 py-12">
               <h2 className="text-center text-2xl font-bold text-cm-navy sm:text-3xl">{t.testimonialsTitle}</h2>
               <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {testimonials.map((tm, i) => (
-                  <li key={i} className="flex flex-col rounded-2xl bg-white p-5 shadow-md">
-                    <div className="text-lg tracking-wider text-amber-400" aria-label={`${tm.rating} stars`}>{"★".repeat(tm.rating)}</div>
+                  <li key={i} className="flex flex-col rounded-2xl border-l-4 border-cm-gold bg-white p-5 shadow-md">
+                    <div className="text-lg tracking-wider text-cm-gold" aria-label={`${tm.rating} stars`}>{"★".repeat(tm.rating)}</div>
                     <p className="mt-2 flex-1 leading-relaxed text-slate-700">“{tm.text}”</p>
                     <p className="mt-4 text-sm font-semibold text-cm-navy">{tm.name}</p>
                   </li>
@@ -259,10 +285,10 @@ export async function SiteView({ lang }: { lang: Lang }) {
             <h2 className="text-center text-2xl font-bold text-cm-navy sm:text-3xl">{t.faqTitle}</h2>
             <div className="mt-6 space-y-3">
               {faq.map((f) => (
-                <details key={f.q} className="group rounded-2xl border border-slate-200 bg-white p-4 open:shadow-sm">
+                <details key={f.q} className="group rounded-2xl border border-slate-200 bg-white p-4 open:border-cm-teal/40 open:bg-cm-tealSoft/40 open:shadow-sm">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-cm-navy">
                     {f.q}
-                    <span className="text-xl text-cm-blue transition group-open:rotate-45">+</span>
+                    <span className="text-xl text-cm-teal transition group-open:rotate-45">+</span>
                   </summary>
                   <p className="mt-2 leading-relaxed text-slate-700">{f.a}</p>
                 </details>
@@ -271,10 +297,10 @@ export async function SiteView({ lang }: { lang: Lang }) {
           </section>
         )}
 
-        <section id="contact" className="scroll-mt-28 bg-gradient-to-br from-cm-navy to-cm-blue text-white">
+        <section id="contact" className="scroll-mt-28 bg-gradient-to-br from-cm-navy via-cm-blue to-cm-teal text-white">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 md:grid-cols-2 md:items-center">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-cm-green">{t.contactEyebrow}</p>
+              <p className="text-sm font-semibold uppercase tracking-wider text-cm-gold">{t.contactEyebrow}</p>
               <h2 className="mt-1 text-3xl font-extrabold">{t.contactTitle}</h2>
               <dl className="mt-6 space-y-4 text-blue-50">
                 <div className="flex gap-3">
@@ -291,7 +317,7 @@ export async function SiteView({ lang }: { lang: Lang }) {
                 )}
               </dl>
             </div>
-            <div className="rounded-3xl bg-white p-6 text-slate-800 shadow-2xl sm:p-8">
+            <div className="rounded-3xl border-t-8 border-cm-gold bg-white p-6 text-slate-800 shadow-2xl sm:p-8">
               <h3 className="text-2xl font-extrabold text-cm-navy">{t.ctaTitle}</h3>
               <p className="mt-2 text-slate-600">{t.ctaBody}</p>
               <div className="mt-6 flex flex-col gap-3">
@@ -312,6 +338,7 @@ export async function SiteView({ lang }: { lang: Lang }) {
         </section>
       </main>
 
+      <Ribbon />
       <footer className="bg-cm-navy pb-24 pt-10 text-sm text-blue-100 sm:pb-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
