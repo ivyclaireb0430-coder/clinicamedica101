@@ -168,11 +168,11 @@ export function buildUserContent(facts: string, history: HistoryLine[], firstNam
   return `${style}<clinic_facts>\n${facts}\n</clinic_facts>\n\n${firstName ? `Patient's first name: ${firstName}\n\n` : ""}<conversation>\n${convo}\n</conversation>\n\nReply to the patient's last message.`;
 }
 
-let client: Anthropic | null = null;
-function getClient() {
+let client: { key: string; client: Anthropic } | null = null;
+function getClient(apiKey: string) {
   // Short timeout: Meta expects the webhook to answer quickly, and a slow reply falls back to the scripted bot.
-  client ??= new Anthropic({ timeout: 25_000, maxRetries: 1 });
-  return client;
+  if (client?.key !== apiKey) client = { key: apiKey, client: new Anthropic({ apiKey, timeout: 25_000, maxRetries: 1 }) };
+  return client.client;
 }
 
 /**
@@ -185,10 +185,13 @@ export async function generateAiDecision(input: {
   firstName?: string;
   examples?: StyleExample[];
   model?: string;
+  /** From the server environment or the key saved in Settings. */
+  apiKey?: string | null;
 }): Promise<AiDecision | null> {
-  if (!aiConfigured()) return null;
+  const apiKey = input.apiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
   try {
-    const response = await getClient().messages.parse({
+    const response = await getClient(apiKey).messages.parse({
       model: input.model || process.env.ANTHROPIC_MODEL || DEFAULT_AI_MODEL,
       max_tokens: 4000,
       output_config: { effort: "low", format: zodOutputFormat(DecisionSchema) },
