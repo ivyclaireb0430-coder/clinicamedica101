@@ -130,14 +130,15 @@ describe("self-booking", async () => {
 });
 
 describe("booking calendar", async () => {
-  const { calendarWeeks } = await import("@/app/start/SlotPicker");
-  it("lays the open days out in Sunday-first weeks, with closed days kept in place", () => {
-    // Tue Nov 10 to Mon Nov 16, 2026, with Thu Nov 12 closed
-    const weeks = calendarWeeks(["2026-11-10", "2026-11-11", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-16"]);
-    expect(weeks).toEqual([
-      [null, null, "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14"],
-      ["2026-11-15", "2026-11-16", null, null, null, null, null],
-    ]);
-    expect(calendarWeeks([])).toEqual([]);
+  const { monthWeeks, bookingMonths } = await import("@/app/start/SlotPicker");
+  it("lays a month out in Sunday-first weeks", () => {
+    const weeks = monthWeeks("2026-12"); // Dec 1, 2026 is a Tuesday
+    expect(weeks[0]).toEqual([null, null, "2026-12-01", "2026-12-02", "2026-12-03", "2026-12-04", "2026-12-05"]);
+    expect(weeks.flat().filter(Boolean)).toHaveLength(31);
+    expect(weeks.at(-1)).toEqual(["2026-12-27", "2026-12-28", "2026-12-29", "2026-12-30", "2026-12-31", null, null]);
+  });
+  it("lists every month from the first to the last bookable day, across the new year", () => {
+    expect(bookingMonths(["2026-11-17", "2027-01-15", "2026-12-03"])).toEqual(["2026-11", "2026-12", "2027-01"]);
+    expect(bookingMonths([])).toEqual([]);
   });
 });

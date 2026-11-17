@@ -3,7 +3,9 @@ import { decryptOptional, encryptOptional } from "./crypto";
 import { audit } from "./audit";
 import { getSetting, setSetting } from "./settings";
 import { doctorEmail, sendGmail } from "./google";
-import { addDays, manilaDateString, todayManila } from "./time";
+import { addDays, manilaDateString, manilaToUtc, todayManila } from "./time";
+import { openSlots } from "./slots";
+import { ACTIVE_APPOINTMENT_STATUSES } from "./constants";
 import { getOpenSlots } from "./booking";
 import { testimonialName } from "./followup";
 import { inquiryNote, spreadSlots, type LandingInquiry } from "./funnel";
@@ -141,12 +143,33 @@ export type BookableDay = { date: string; slots: string[] }; // slots: ISO start
  * Open slots for self-booking on the landing page: the next `days` days with at least one opening,
  * at most `perDay` times each (spread across the day so people see morning and afternoon choices).
  */
-export async function bookableDays(consultationTypeId: string, days = 14, perDay = 8, now = new Date()): Promise<BookableDay[]> {
-  const out: BookableDay[] = [];
+/** How far ahead visitors can book online. Matches the Google Calendar sync window, so busy times there are known. */
+export const BOOKING_DAYS_AHEAD = 60;
+
+export async function bookableDays(consultationTypeId: string, days = BOOKING_DAYS_AHEAD, perDay = 8, now = new Date()): Promise<BookableDay[]> {
+  const type = await db.consultationType.findUnique({ where: { id: consultationTypeId } });
+  if (!type || !type.active) return [];
   const today = todayManila(now);
+  const last = addDays(today, days - 1);
+  // One read of the schedule, closed dates and busy times for the whole range (not one set per day).
+  const [rules, blocked, appts, external] = await Promise.all([
+    db.scheduleRule.findMany(),
+    db.blockedDate.findMany({ where: { date: { gte: today, lte: last } } }),
+    db.appointment.findMany({
+      where: { status: { in: ACTIVE_APPOINTMENT_STATUSES }, startAt: { lt: manilaToUtc(addDays(last, 1), "00:00") }, endAt: { gt: manilaToUtc(today, "00:00") } },
+      select: { startAt: true, endAt: true },
+    }),
+    db.externalBusy.findMany({
+      where: { startAt: { lt: manilaToUtc(addDays(last, 1), "00:00") }, endAt: { gt: manilaToUtc(today, "00:00") } },
+      select: { startAt: true, endAt: true },
+    }),
+  ]);
+  const busy = [...appts, ...external];
+  const blockedDates = blocked.map((b) => b.date);
+  const out: BookableDay[] = [];
   for (let i = 0; i < days; i++) {
     const date = addDays(today, i);
-    const open = await getOpenSlots(date, consultationTypeId, now);
+    const open = openSlots({ date, durationMin: type.durationMin, rules, blockedDates, busy, now });
     if (open.length) out.push({ date, slots: spreadSlots(open, perDay).map((s) => s.startAt.toISOString()) });
   }
   return out;

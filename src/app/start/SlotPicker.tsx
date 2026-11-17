@@ -12,18 +12,29 @@ const DAY_MS = 86_400_000;
 const utc = (ymd: string) => new Date(`${ymd}T00:00:00Z`);
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Calendar weeks (Sunday first) covering the first to the last bookable day; null = padding before/after the range. */
-export function calendarWeeks(dates: string[]): (string | null)[][] {
-  if (dates.length === 0) return [];
-  const sorted = [...dates].sort();
-  const first = utc(sorted[0]);
-  const last = utc(sorted[sorted.length - 1]);
+/** The weeks (Sunday first) of one month, "YYYY-MM"; null = padding before the 1st and after the last day. */
+export function monthWeeks(month: string): (string | null)[][] {
+  const first = utc(`${month}-01`);
   const cells: (string | null)[] = Array(first.getUTCDay()).fill(null);
-  for (let t = first.getTime(); t <= last.getTime(); t += DAY_MS) cells.push(ymd(new Date(t)));
+  for (let t = first.getTime(); ymd(new Date(t)).startsWith(month); t += DAY_MS) cells.push(ymd(new Date(t)));
   while (cells.length % 7) cells.push(null);
   const weeks: (string | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return weeks;
+}
+
+/** Every month ("YYYY-MM") from the first to the last bookable day, in order. */
+export function bookingMonths(dates: string[]): string[] {
+  if (dates.length === 0) return [];
+  const sorted = [...dates].sort();
+  const out: string[] = [];
+  for (let m = sorted[0].slice(0, 7); m <= sorted[sorted.length - 1].slice(0, 7); ) {
+    out.push(m);
+    const d = utc(`${m}-01`);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    m = ymd(d).slice(0, 7);
+  }
+  return out;
 }
 
 /**
@@ -48,8 +59,19 @@ export function SlotPicker({
   const slotInput = useRef<HTMLInputElement>(null);
   // The browser's "please pick" message must be cleared once a time is picked, or the form stays blocked.
   useEffect(() => slotInput.current?.setCustomValidity(""), [slot, callMe]);
-  const weeks = calendarWeeks(days.map((d) => d.date));
-  const months = [...new Set(weeks.flat().filter(Boolean).map((d) => monthFmt.format(utc(d!))))];
+  const months = bookingMonths(days.map((d) => d.date));
+  const [monthIdx, setMonthIdx] = useState(0);
+  const month = months[monthIdx] ?? "";
+  const weeks = month ? monthWeeks(month) : [];
+  const firstOpen = days[0]?.date ?? "";
+  const lastOpen = days[days.length - 1]?.date ?? "";
+  const go = (step: number) => {
+    const i = Math.min(Math.max(monthIdx + step, 0), months.length - 1);
+    setMonthIdx(i);
+    // Jump to the first open day of the new month so its times show right away.
+    const next = days.find((d) => d.date.startsWith(months[i]));
+    if (next) { setDay(next.date); setSlot(""); }
+  };
   const slots = open.get(day) ?? [];
 
   return (
@@ -74,15 +96,21 @@ export function SlotPicker({
             onInvalid={(e) => e.currentTarget.setCustomValidity(labels.required)}
           />
           <div className="rounded-xl bg-white p-2 sm:p-3">
-            <p className="mb-2 text-center text-sm font-bold text-cm-navy">{months.join(" – ")}</p>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <button type="button" onClick={() => go(-1)} disabled={monthIdx === 0} aria-label="Previous month"
+                className="rounded-lg px-3 py-1.5 text-lg font-bold text-cm-blue hover:bg-cm-sky disabled:invisible">‹</button>
+              <p className="text-center text-sm font-bold text-cm-navy" aria-live="polite">{monthFmt.format(utc(`${month}-01`))}</p>
+              <button type="button" onClick={() => go(1)} disabled={monthIdx >= months.length - 1} aria-label="Next month"
+                className="rounded-lg px-3 py-1.5 text-lg font-bold text-cm-blue hover:bg-cm-sky disabled:invisible">›</button>
+            </div>
             <div className="grid grid-cols-7 gap-1 text-center">
               {WEEK.map((w) => <div key={w} className="pb-1 text-[11px] font-semibold uppercase text-slate-400">{w}</div>)}
               {weeks.flat().map((d, i) => {
                 if (!d) return <div key={`pad-${i}`} />;
                 const available = open.has(d);
                 const active = d === day;
-                const n = utc(d).getUTCDate();
-                const label = n === 1 ? `${monthFmt.format(utc(d)).slice(0, 3)} 1` : String(n);
+                const label = String(utc(d).getUTCDate());
+                const inRange = d >= firstOpen && d <= lastOpen;
                 return available ? (
                   <button
                     key={d}
@@ -97,7 +125,7 @@ export function SlotPicker({
                     {label}
                   </button>
                 ) : (
-                  <div key={d} className="flex aspect-square items-center justify-center text-sm text-slate-300 line-through" title="Closed / full">{label}</div>
+                  <div key={d} className={`flex aspect-square items-center justify-center text-sm text-slate-300 ${inRange ? "line-through" : ""}`} title={inRange ? "Closed / full" : undefined}>{label}</div>
                 );
               })}
             </div>
