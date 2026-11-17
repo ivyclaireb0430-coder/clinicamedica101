@@ -375,6 +375,10 @@ export async function saveFacebookKeys(formData: FormData) {
   const input = Object.fromEntries(Object.keys(META_FIELDS).map((k) => [k, String(formData.get(k) ?? "")]));
   if (input.META_APP_ID && !/^\d{5,}$/.test(input.META_APP_ID.trim())) redirect("/settings/messenger?fb_error=appid");
   if (input.META_PAGE_ID && !/^\d{5,}$/.test(input.META_PAGE_ID.trim())) redirect("/settings/messenger?fb_error=pageid");
+  // Catch a browser autofilling the saved login (email/password) into these fields.
+  if (input.META_APP_SECRET && !/^[a-f0-9]{32}$/i.test(input.META_APP_SECRET.trim())) redirect("/settings/messenger?fb_error=secret");
+  if (input.META_PAGE_ACCESS_TOKEN && !/^EAA[\w-]{20,}$/.test(input.META_PAGE_ACCESS_TOKEN.replace(/\s+/g, ""))) redirect("/settings/messenger?fb_error=token");
+  if (input.FB_PAGE_USERNAME && !/^[\w.-]{3,50}$/.test(input.FB_PAGE_USERNAME.trim())) redirect("/settings/messenger?fb_error=username");
   await saveMetaCreds(input);
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "Facebook keys saved" });
   redirect("/settings/messenger?saved=1");
