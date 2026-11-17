@@ -17,6 +17,7 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 5 | Weekly dashboard, Monday email, CSV export, audit log screen (AI assistant: awaiting owner decision) | **Done** |
 | 6 | PostgreSQL, deployment (VPS + HTTPS), backup/restore, privacy tools, Taglish SOPs | **Done** |
 | 7 | Sales funnel: public landing page (`/start`) with inquiry form into Leads, ad tracking links, page visits in the dashboard funnel | **In review** |
+| 8 | Public clinic website (`/clinic`, `/clinic/en`): services, approach, doctor, fees, location, links to booking | **In review** |
 
 ## Run it locally
 

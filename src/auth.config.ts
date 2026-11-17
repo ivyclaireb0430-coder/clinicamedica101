@@ -27,6 +27,8 @@ export const authConfig = {
         pathname.startsWith("/privacy") ||
         pathname === "/start" ||
         pathname.startsWith("/start/") ||
+        pathname === "/clinic" ||
+        pathname.startsWith("/clinic/") ||
         pathname.startsWith("/intake/") ||
         pathname.startsWith("/feedback/") ||
         pathname.startsWith("/api/auth") ||
