@@ -1,9 +1,6 @@
-import { SiteView, siteMetadata } from "../SiteView";
+import { permanentRedirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-export const generateMetadata = () => siteMetadata("en");
-
-/** Public clinic website (English). */
+/** The English website moved to /clinic; keep old /clinic/en links working. */
 export default function ClinicSiteEn() {
-  return <SiteView lang="en" />;
+  permanentRedirect("/clinic");
 }

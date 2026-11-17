@@ -62,7 +62,7 @@ export const SETTING_DEFAULTS = {
   landingShowFees: "1", // list active consultation types and fees
   landingShowTestimonials: "1", // feedback with testimonial consent, 4–5 stars, not hidden
   lastWebLeadNotifyAt: "",
-  // Public clinic website at /clinic (Taglish) and /clinic/en. Edited in Settings → Website.
+  // Public clinic website at /clinic (English) and /clinic/tl (Taglish). Edited in Settings → Website.
   // Services: one per line, "Name | Description | link" (link: consultation, vector-scan or start).
   siteEnabled: "1",
   siteHeadline: "Integrative medicine sa Makati: hinahanap ang ugat, hindi lang ang sintomas",

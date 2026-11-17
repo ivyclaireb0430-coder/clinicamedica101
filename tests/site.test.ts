@@ -16,7 +16,8 @@ describe("clinic website", () => {
     expect(bookingHref("consultation", "tl")).toBe("/start/consultation?c=website");
     expect(bookingHref("vector-scan", "en")).toBe("/start/vector-scan/en?c=website");
     expect(bookingHref("start", "en")).toBe("/start?c=website");
-    expect(sitePath("en")).toBe("/clinic/en");
+    expect(sitePath("en")).toBe("/clinic");
+    expect(sitePath("tl")).toBe("/clinic/tl");
     expect(mapsHref("Centuria Medical Makati")).toBe("https://www.google.com/maps/search/?api=1&query=Centuria%20Medical%20Makati");
   });
 
