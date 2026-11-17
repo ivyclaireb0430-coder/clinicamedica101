@@ -362,3 +362,20 @@ export async function saveAiApiKey(formData: FormData) {
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "AI API key saved" });
   redirect("/settings/messenger?saved=1");
 }
+
+/** Facebook keys from the Settings form (stored encrypted; clinic.env values take priority). */
+export async function saveFacebookKeys(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const { META_FIELDS, saveMetaCreds, clearMetaCreds } = await import("@/lib/messenger/meta-creds");
+  if (formData.get("clear") === "1") {
+    await clearMetaCreds();
+    await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "Facebook keys removed" });
+    redirect("/settings/messenger?saved=1");
+  }
+  const input = Object.fromEntries(Object.keys(META_FIELDS).map((k) => [k, String(formData.get(k) ?? "")]));
+  if (input.META_APP_ID && !/^\d{5,}$/.test(input.META_APP_ID.trim())) redirect("/settings/messenger?fb_error=appid");
+  if (input.META_PAGE_ID && !/^\d{5,}$/.test(input.META_PAGE_ID.trim())) redirect("/settings/messenger?fb_error=pageid");
+  await saveMetaCreds(input);
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "Facebook keys saved" });
+  redirect("/settings/messenger?saved=1");
+}
