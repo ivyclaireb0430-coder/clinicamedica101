@@ -87,9 +87,12 @@ export default async function MessengerSettings({ searchParams }: { searchParams
                   <input
                     id={k}
                     name={k}
-                    type={secret ? "password" : "text"}
-                    // Stop browsers from filling a saved login (email/password) into these fields.
-                    autoComplete={secret ? "new-password" : "off"}
+                    // No type="password" here: browsers fill a saved login (email + password) into the
+                    // nearest text/password pair and ignore autocomplete. Mask secrets with CSS instead.
+                    type="text"
+                    autoComplete="off"
+                    spellCheck={false}
+                    style={secret ? ({ WebkitTextSecurity: "disc" } as React.CSSProperties) : undefined}
                     data-1p-ignore
                     data-lpignore="true"
                     className="input"
@@ -119,7 +122,7 @@ export default async function MessengerSettings({ searchParams }: { searchParams
             <form action={saveAiApiKey} className="flex flex-wrap items-end gap-2">
               <div className="min-w-64 flex-1">
                 <label className="label" htmlFor="apiKey">{aiReady ? "Palitan ang Anthropic API key" : "I-paste ang Anthropic API key (nagsisimula sa sk-ant-)"}</label>
-                <input id="apiKey" name="apiKey" type="password" autoComplete="new-password" data-1p-ignore data-lpignore="true" className="input" placeholder="sk-ant-..." required />
+                <input id="apiKey" name="apiKey" type="text" autoComplete="off" spellCheck={false} style={{ WebkitTextSecurity: "disc" } as React.CSSProperties} data-1p-ignore data-lpignore="true" className="input" placeholder="sk-ant-..." required />
               </div>
               <button className="btn">I-save ang key</button>
               {aiReady && (
