@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { verifySignature } from "@/lib/messenger/meta";
 import { handleEvent, type MessagingEvent } from "@/lib/messenger/handler";
+import { setSetting } from "@/lib/settings";
+
+async function noteDelivery(key: "messengerLastOkAt" | "messengerLastBadSigAt") {
+  try {
+    await setSetting(key, new Date().toISOString());
+  } catch {
+    // status only; never block the webhook
+  }
+}
 
 // Meta calls GET once to verify the webhook URL.
 export async function GET(req: Request) {
@@ -15,6 +24,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const raw = await req.text();
   if (!verifySignature(raw, req.headers.get("x-hub-signature-256"))) {
+    // Usually a wrong App Secret saved in Settings → Messenger.
+    console.warn("Messenger webhook: invalid signature (check META_APP_SECRET)");
+    await noteDelivery("messengerLastBadSigAt");
     return new Response("Invalid signature", { status: 401 });
   }
   let body: { object?: string; entry?: { messaging?: MessagingEvent[] }[] };
@@ -24,6 +36,7 @@ export async function POST(req: Request) {
     return new Response("Bad request", { status: 400 });
   }
   if (body.object !== "page") return NextResponse.json({ ok: true });
+  await noteDelivery("messengerLastOkAt");
 
   for (const entry of body.entry ?? []) {
     for (const event of entry.messaging ?? []) {
