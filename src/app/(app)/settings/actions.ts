@@ -296,3 +296,52 @@ export async function saveWebsiteSettings(formData: FormData) {
   revalidatePath("/clinic/tl");
   redirect("/settings/website?saved=1");
 }
+
+export async function saveAiSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  await setSetting("aiRepliesEnabled", formData.get("aiRepliesEnabled") === "on" ? "1" : "0");
+  await setSetting("aiHealthInquiries", formData.get("aiHealthInquiries") === "on" ? "1" : "0");
+  const limit = z.coerce.number().int().min(0).max(5000).parse(formData.get("aiDailyLimit"));
+  await setSetting("aiDailyLimit", String(limit));
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "AI reply settings" });
+  redirect("/settings/messenger?saved=1");
+}
+
+export type AiTestResult = { action?: string; reply?: string; note?: string; error?: string };
+
+/** Preview the AI reply to a sample message. Nothing is sent to any patient. */
+export async function testAiReply(_prev: AiTestResult, formData: FormData): Promise<AiTestResult> {
+  await requirePermission("settings:manage");
+  const { aiConfigured, decideAiReply } = await import("@/lib/messenger/ai");
+  const { loadClinicFacts, loadStyleExamples } = await import("@/lib/messenger/ai-context");
+  const { getSetting } = await import("@/lib/settings");
+  const text = z.string().trim().min(1).max(600).safeParse(formData.get("text"));
+  if (!text.success) return { error: "Mag-type ng sample message." };
+  if (!aiConfigured()) return { error: "Wala pang ANTHROPIC_API_KEY sa server." };
+  const [facts, examples, health] = await Promise.all([loadClinicFacts(), loadStyleExamples(), getSetting("aiHealthInquiries")]);
+  const decision = await decideAiReply({ text: text.data, facts, examples, allowHealth: health === "1", history: [{ from: "patient", text: text.data }] });
+  if (!decision) return { error: "Hindi sumagot ang AI (error o timeout). Sa live, ipapasa ito sa staff." };
+  if (!decision.reply) {
+    return { action: "handoff", note: "Emergency, health (kapag naka-off ang health inquiries), o hindi ligtas na sagot: ang matatanggap ng pasyente ay ang 'Ipapasa sa doktor' na script, at aabisuhan ang doktor." };
+  }
+  return { action: decision.action, reply: decision.reply, note: decision.notifyDoctor ? "Health inquiry: aabisuhan din ang doktor." : undefined };
+}
+
+export async function collectAiExamples(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const { collectStyleExamples } = await import("@/lib/messenger/ai-context");
+  const result = await collectStyleExamples({ facebook: formData.get("facebook") === "on" });
+  await audit({ userId: user.id, action: "CREATE", entity: "AiExample", detail: `collected ${result.added}` });
+  const q = new URLSearchParams({ added: String(result.added), ...(result.error ? { fb_error: result.error.slice(0, 200) } : {}) });
+  redirect(`/settings/messenger/examples?${q}`);
+}
+
+export async function setAiExample(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const id = z.string().min(1).parse(formData.get("id"));
+  const op = z.enum(["approve", "unapprove", "delete"]).parse(formData.get("op"));
+  if (op === "delete") await db.aiExample.delete({ where: { id } });
+  else await db.aiExample.update({ where: { id }, data: { approved: op === "approve" } });
+  await audit({ userId: user.id, action: op === "delete" ? "DELETE" : "UPDATE", entity: "AiExample", entityId: id });
+  revalidatePath("/settings/messenger/examples");
+}

@@ -1,5 +1,6 @@
 import { renderScript } from "../scripts";
 import type { OutMessage, QuickReply } from "./meta";
+import type { AiDecision } from "./ai";
 
 // Messenger conversation logic. Pure apart from the injected deps, so it can be unit-tested.
 // Rules: never diagnose, recommend treatment or promise results. Anything medical goes to the doctor.
@@ -42,6 +43,11 @@ export type BotDeps = {
   saveMobile(mobile: string): Promise<void>;
   handoff(): Promise<void>;
   setStage(stage: "REPLIED" | "FEE_EXPLAINED"): Promise<void>;
+  /**
+   * AI reply for free text the scripts don't cover. Absent or returning null = AI off or failed,
+   * and the bot falls back to handing the message to the doctor.
+   */
+  ai?(text: string): Promise<AiDecision | null>;
 };
 
 export type BotResult = { replies: OutMessage[]; state: FlowState };
@@ -126,6 +132,12 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
   let intent = payload || (text ? detectIntent(text) : null);
   if (intent === "RESCHED" && !ctx.upcoming) intent = "MENU_BOOK";
 
+  // Free text the scripts don't understand: let the AI answer general clinic questions, if it is on.
+  if (!intent && text && !payload && deps.ai) {
+    const decision = await deps.ai(text);
+    if (decision) return aiResult(ctx, decision, deps);
+  }
+
   if (ctx.isNewConversation && (!intent || intent === "GREETING")) {
     // First contact: greet, privacy notice, menu. Free text is also flagged for the doctor if it isn't a simple greeting.
     if (text && !intent) await deps.handoff();
@@ -170,6 +182,29 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
       if (ctx.recentlyHandedOff) return { replies: [], state: IDLE };
       return { replies: [{ text: script(ctx, "doctor_handoff"), quickReplies: MENU }], state: IDLE };
   }
+}
+
+async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): Promise<BotResult> {
+  // First contact still shows the privacy notice, since the reply was written by the AI provider.
+  const notice = ctx.isNewConversation ? `\n\nPrivacy notice: ${ctx.privacyUrl}` : "";
+  // Health inquiry answered by the AI: the doctor still sees it in the inbox.
+  if (decision.notifyDoctor && decision.action !== "handoff") await deps.handoff();
+  if (decision.action === "handoff") {
+    await deps.handoff();
+    if (ctx.isNewConversation && !decision.reply) {
+      await deps.setStage("REPLIED");
+      return { replies: [{ text: script(ctx, "first_reply"), quickReplies: MENU }], state: IDLE };
+    }
+    if (ctx.recentlyHandedOff) return { replies: [], state: IDLE };
+    return { replies: [{ text: (decision.reply || script(ctx, "doctor_handoff")) + notice, quickReplies: MENU, byAi: Boolean(decision.reply) }], state: IDLE };
+  }
+  if (decision.action === "book") {
+    await deps.setStage("REPLIED");
+    const booking = await startBooking(ctx, deps);
+    return { replies: [{ text: decision.reply + notice, byAi: true }, ...booking.replies], state: booking.state };
+  }
+  await deps.setStage(/₱|\bphp\b|pesos?\b/i.test(decision.reply) ? "FEE_EXPLAINED" : "REPLIED");
+  return { replies: [{ text: decision.reply + notice, quickReplies: MENU, byAi: true }], state: IDLE };
 }
 
 async function startBooking(ctx: BotContext, deps: BotDeps, rescheduleId?: string): Promise<BotResult> {

@@ -9,6 +9,11 @@ export const SETTING_DEFAULTS = {
   clinicHours: "Clinic: Lunes–Biyernes 10am–9pm, Sabado–Linggo 2pm–9pm. Consultation: 2pm–9pm araw-araw.",
   clinicHoursEn: "Clinic: Mon–Fri 10am–9pm, Sat–Sun 2pm–9pm. Consultations: 2pm–9pm daily.",
   automationEnabled: "1", // Messenger auto-replies on/off
+  // AI replies for Messenger free text (needs ANTHROPIC_API_KEY). Off until the owner turns it on.
+  aiRepliesEnabled: "0",
+  aiHealthInquiries: "1", // AI also answers health inquiries (no medical advice; invites to book). Owner asked for this, Nov 17 2026.
+  aiDailyLimit: "100", // max AI replies per day (cost cap); over the cap, the scripted bot hands off to staff
+  aiUsage: "", // "YYYY-MM-DD:count"
   remindersEnabled: "1",
   smsEnabled: "1", // owner approved SMS; only sends once SEMAPHORE_API_KEY is set
   utilityTemplateName: "", // approved Messenger UTILITY template for reminders outside 24h

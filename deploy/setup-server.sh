@@ -72,6 +72,7 @@ META_VERIFY_TOKEN=$(openssl rand -hex 20)
 META_GRAPH_VERSION=v25.0
 SEMAPHORE_API_KEY=
 SEMAPHORE_SENDER_NAME=
+ANTHROPIC_API_KEY=
 FB_PAGE_USERNAME=
 # Optional off-server backup copy, e.g. gdrive:clinic-backups (after setting up rclone)
 RCLONE_REMOTE=
