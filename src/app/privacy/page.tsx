@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"; // the AI section follows the live setting
+
 import { getSetting } from "@/lib/settings";
 import { aiEnabled } from "@/lib/messenger/ai-context";
 
