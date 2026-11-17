@@ -17,6 +17,11 @@ export const SETTING_DEFAULTS = {
   aiDailyLimit: "100", // max AI replies per day (cost cap); over the cap, the scripted bot hands off to staff
   aiUsage: "", // "YYYY-MM-DD:count"
   // Last webhook deliveries from Meta, for the setup status in Settings → Messenger (ISO times).
+  // Comment-to-Messenger: a private Messenger reply to people who comment on Page posts and ads. Off until turned on.
+  commentRepliesEnabled: "0",
+  commentPrivateText:
+    "Hi {name}! Salamat po sa comment ninyo. 😊 Ano po ang gusto ninyong malaman? Puwede po kayong magtanong dito tungkol sa Vector Scan, presyo o schedule, at tutulungan namin kayong mag-book.",
+  commentPublicText: "Salamat po! Na-message na po namin kayo sa Messenger. 😊", // blank = no public reply
   messengerLastOkAt: "",
   messengerLastBadSigAt: "",
   remindersEnabled: "1",

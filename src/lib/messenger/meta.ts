@@ -66,6 +66,31 @@ export async function sendText(
   });
 }
 
+/** Private reply to a comment on a Page post or ad: opens a Messenger chat with the commenter. One per comment, within 7 days. */
+export async function sendPrivateReply(commentId: string, text: string): Promise<{ recipientId?: string; message_id?: string; error?: string }> {
+  if (!messengerConfigured()) return { error: "Messenger is not configured" };
+  let res: Response;
+  try {
+    res = await fetch(`${graphBase()}/${process.env.META_PAGE_ID}/messages?access_token=${encodeURIComponent(process.env.META_PAGE_ACCESS_TOKEN ?? "")}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recipient: { comment_id: commentId }, message: { text: text.slice(0, 1999) } }),
+    });
+  } catch (err) {
+    return { error: `Network error: ${(err as Error).message}` };
+  }
+  const json = (await res.json().catch(() => ({}))) as { recipient_id?: string; message_id?: string; error?: { message?: string } };
+  if (!res.ok) return { error: `Meta ${res.status}: ${json.error?.message ?? "unknown error"}` };
+  return { recipientId: json.recipient_id, message_id: json.message_id };
+}
+
+/** Public reply under a comment (needs pages_manage_engagement). */
+export async function replyToComment(commentId: string, text: string): Promise<{ error?: string }> {
+  if (!messengerConfigured()) return { error: "Messenger is not configured" };
+  const r = await post(`/${commentId}/comments`, { message: text.slice(0, 1000) });
+  return r.error ? { error: r.error } : {};
+}
+
 /** Approved UTILITY template with positional params, e.g. {{1}} first name, {{2}} date, {{3}} time. */
 export async function sendUtilityTemplate(psid: string, templateName: string, language: string, params: string[]) {
   if (!messengerConfigured()) return { error: "Messenger is not configured" };

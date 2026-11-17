@@ -307,6 +307,18 @@ export async function saveAiSettings(formData: FormData) {
   redirect("/settings/messenger?saved=1");
 }
 
+export async function saveCommentSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const privateText = z.string().trim().min(5).max(1000).safeParse(formData.get("commentPrivateText"));
+  const publicText = z.string().trim().max(500).safeParse(formData.get("commentPublicText") ?? "");
+  if (!privateText.success || !publicText.success) redirect("/settings/messenger?comment_error=1");
+  await setSetting("commentRepliesEnabled", formData.get("commentRepliesEnabled") === "on" ? "1" : "0");
+  await setSetting("commentPrivateText", privateText.data);
+  await setSetting("commentPublicText", publicText.data);
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "comment-to-Messenger settings" });
+  redirect("/settings/messenger?saved=1");
+}
+
 export type AiTestResult = { action?: string; reply?: string; note?: string; error?: string };
 
 /** Preview the AI reply to a sample message. Nothing is sent to any patient. */
