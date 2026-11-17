@@ -312,14 +312,15 @@ export type AiTestResult = { action?: string; reply?: string; note?: string; err
 /** Preview the AI reply to a sample message. Nothing is sent to any patient. */
 export async function testAiReply(_prev: AiTestResult, formData: FormData): Promise<AiTestResult> {
   await requirePermission("settings:manage");
-  const { aiConfigured, decideAiReply } = await import("@/lib/messenger/ai");
-  const { loadClinicFacts, loadStyleExamples } = await import("@/lib/messenger/ai-context");
+  const { decideAiReply, generateAiDecision } = await import("@/lib/messenger/ai");
+  const { aiApiKey, loadClinicFacts, loadStyleExamples } = await import("@/lib/messenger/ai-context");
   const { getSetting } = await import("@/lib/settings");
   const text = z.string().trim().min(1).max(600).safeParse(formData.get("text"));
   if (!text.success) return { error: "Mag-type ng sample message." };
-  if (!aiConfigured()) return { error: "Wala pang ANTHROPIC_API_KEY sa server." };
+  const apiKey = await aiApiKey();
+  if (!apiKey) return { error: "Wala pang API key. Ilagay muna ito sa itaas." };
   const [facts, examples, health] = await Promise.all([loadClinicFacts(), loadStyleExamples(), getSetting("aiHealthInquiries")]);
-  const decision = await decideAiReply({ text: text.data, facts, examples, allowHealth: health === "1", history: [{ from: "patient", text: text.data }] });
+  const decision = await decideAiReply({ text: text.data, facts, examples, allowHealth: health === "1", history: [{ from: "patient", text: text.data }] }, (args) => generateAiDecision({ ...args, apiKey }));
   if (!decision) return { error: "Hindi sumagot ang AI (error o timeout). Sa live, ipapasa ito sa staff." };
   if (!decision.reply) {
     return { action: "handoff", note: "Emergency, health (kapag naka-off ang health inquiries), o hindi ligtas na sagot: ang matatanggap ng pasyente ay ang 'Ipapasa sa doktor' na script, at aabisuhan ang doktor." };
@@ -344,4 +345,20 @@ export async function setAiExample(formData: FormData) {
   else await db.aiExample.update({ where: { id }, data: { approved: op === "approve" } });
   await audit({ userId: user.id, action: op === "delete" ? "DELETE" : "UPDATE", entity: "AiExample", entityId: id });
   revalidatePath("/settings/messenger/examples");
+}
+
+/** Save the Anthropic API key from the browser (stored encrypted). Empty "clear" removes it. */
+export async function saveAiApiKey(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  if (formData.get("clear") === "1") {
+    await setSetting("aiApiKeyEnc", "");
+    await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "AI API key removed" });
+    redirect("/settings/messenger?saved=1");
+  }
+  const key = String(formData.get("apiKey") ?? "").replace(/\s+/g, "");
+  if (!/^sk-ant-[\w-]{20,}$/.test(key)) redirect("/settings/messenger?key_error=1");
+  const { encrypt } = await import("@/lib/crypto");
+  await setSetting("aiApiKeyEnc", encrypt(key));
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "AI API key saved" });
+  redirect("/settings/messenger?saved=1");
 }

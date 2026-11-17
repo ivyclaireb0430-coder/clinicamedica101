@@ -7,7 +7,7 @@ import { getOpenSlots, createAppointment, rescheduleAppointment, setAppointmentS
 import { notifyDoctor } from "../notify";
 import { fetchProfile, sendText, type OutMessage } from "./meta";
 import { decideAiReply, generateAiDecision } from "./ai";
-import { aiEnabled, loadClinicFacts, loadHistory, loadStyleExamples, takeAiQuota } from "./ai-context";
+import { aiApiKey, aiEnabled, loadClinicFacts, loadHistory, loadStyleExamples, takeAiQuota } from "./ai-context";
 import { handleMessage, parseState, type BotDeps, type FlowState, type Slot } from "./bot";
 
 const SLOTS_PER_PAGE = 6;
@@ -157,7 +157,7 @@ export async function handleEvent(event: MessagingEvent): Promise<void> {
         loadClinicFacts(), loadHistory(conversation.id), loadStyleExamples(), getSetting("aiHealthInquiries"),
       ]);
       // The daily cap counts only real calls to the AI provider.
-      return decideAiReply({ text: incoming, facts, history, firstName, examples, allowHealth: health === "1" }, async (args) => ((await takeAiQuota()) ? generateAiDecision(args) : null));
+      return decideAiReply({ text: incoming, facts, history, firstName, examples, allowHealth: health === "1" }, async (args) => ((await takeAiQuota()) ? generateAiDecision({ ...args, apiKey: await aiApiKey() }) : null));
     };
   }
   const state: FlowState = parseState(conversation.flowState);

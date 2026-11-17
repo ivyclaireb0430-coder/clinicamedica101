@@ -6,9 +6,21 @@ import { aiConfigured, factsText, type HistoryLine, type StyleExample } from "./
 import { extractPairs, replyHash, type ExamplePair, type ThreadLine } from "./ai-examples";
 import { fetchPageThreads } from "./meta";
 
-/** AI replies are on: switched on in Settings and an API key is set on the server. */
+/** The Anthropic API key: from the server environment, or the one saved (encrypted) in Settings. */
+export async function aiApiKey(): Promise<string | null> {
+  if (aiConfigured()) return process.env.ANTHROPIC_API_KEY!;
+  const stored = await getSetting("aiApiKeyEnc");
+  if (!stored) return null;
+  try {
+    return decrypt(stored);
+  } catch {
+    return null;
+  }
+}
+
+/** AI replies are on: switched on in Settings and an API key is available. */
 export async function aiEnabled(): Promise<boolean> {
-  return aiConfigured() && (await getSetting("aiRepliesEnabled")) === "1";
+  return (await getSetting("aiRepliesEnabled")) === "1" && Boolean(await aiApiKey());
 }
 
 /** Count one AI reply against today's cap. Returns false when the cap is reached. */
