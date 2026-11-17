@@ -6,6 +6,8 @@ import { formatDate, formatPhp, formatTime, todayManila, addDays } from "../time
 import { getOpenSlots, createAppointment, rescheduleAppointment, setAppointmentStatus, advanceLeadStage, SlotTakenError } from "../booking";
 import { notifyDoctor } from "../notify";
 import { fetchProfile, sendText, type OutMessage } from "./meta";
+import { decideAiReply, generateAiDecision } from "./ai";
+import { aiEnabled, loadClinicFacts, loadHistory, takeAiQuota } from "./ai-context";
 import { handleMessage, parseState, type BotDeps, type FlowState, type Slot } from "./bot";
 
 const SLOTS_PER_PAGE = 6;
@@ -64,7 +66,7 @@ function channelToSource(channel: string) {
   return ["FB_REEL", "FB_POST", "RADIO", "REFERRAL"].includes(channel) ? channel : "MESSENGER";
 }
 
-export async function storeOutgoing(conversationId: string, text: string, sender: "BOT" | "DOCTOR", result: { message_id?: string; error?: string }) {
+export async function storeOutgoing(conversationId: string, text: string, sender: "BOT" | "AI" | "DOCTOR", result: { message_id?: string; error?: string }) {
   await db.message.create({
     data: {
       conversationId,
@@ -82,7 +84,7 @@ export async function storeOutgoing(conversationId: string, text: string, sender
 async function sendBotReplies(conversationId: string, psid: string, replies: OutMessage[]) {
   for (const reply of replies) {
     const result = await sendText(psid, reply);
-    await storeOutgoing(conversationId, reply.text, "BOT", result);
+    await storeOutgoing(conversationId, reply.text, reply.byAi ? "AI" : "BOT", result);
   }
 }
 
@@ -148,6 +150,14 @@ export async function handleEvent(event: MessagingEvent): Promise<void> {
   ]);
 
   const deps = makeDeps(conversation.id, lead.id);
+  if (await aiEnabled()) {
+    const firstName = lead.firstName === "Messenger user" ? undefined : lead.firstName;
+    deps.ai = async (incoming) => {
+      const [facts, history] = await Promise.all([loadClinicFacts(), loadHistory(conversation.id)]);
+      // The daily cap counts only real calls to the AI provider.
+      return decideAiReply({ text: incoming, facts, history, firstName }, async (args) => ((await takeAiQuota()) ? generateAiDecision(args) : null));
+    };
+  }
   const state: FlowState = parseState(conversation.flowState);
   const result = await handleMessage(
     {

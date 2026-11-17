@@ -3,7 +3,10 @@ import { getSetting } from "@/lib/settings";
 import { messengerConfigured, REMINDER_TEMPLATE_BODY } from "@/lib/messenger/meta";
 import { googleConfigured } from "@/lib/google";
 import { BackLink, PageHeader } from "@/components/ui";
-import { saveMessengerSettings, setupReminderTemplate } from "../actions";
+import { saveAiSettings, saveMessengerSettings, setupReminderTemplate } from "../actions";
+import { aiConfigured } from "@/lib/messenger/ai";
+import { aiUsageToday } from "@/lib/messenger/ai-context";
+import { AiTester } from "./AiTester";
 
 export default async function MessengerSettings({ searchParams }: { searchParams: Promise<{ saved?: string; template?: string; template_error?: string }> }) {
   await requirePermission("settings:manage");
@@ -11,6 +14,8 @@ export default async function MessengerSettings({ searchParams }: { searchParams
   const [automation, reminders, sms, noShowHours, template] = await Promise.all([
     getSetting("automationEnabled"), getSetting("remindersEnabled"), getSetting("smsEnabled"), getSetting("autoNoShowHours"), getSetting("utilityTemplateName"),
   ]);
+  const [aiOn, aiLimit, aiUsed] = await Promise.all([getSetting("aiRepliesEnabled"), getSetting("aiDailyLimit"), aiUsageToday()]);
+  const aiReady = aiConfigured();
   const smsReady = Boolean(process.env.SEMAPHORE_API_KEY);
   const appUrl = process.env.APP_URL ?? "https://your-domain";
 
@@ -45,6 +50,33 @@ export default async function MessengerSettings({ searchParams }: { searchParams
           <div>SMS: <b>{smsReady ? "API key set" : "No API key yet"}</b></div>
           <div className="muted break-all">Webhook URL for the Meta app: {appUrl}/api/webhooks/messenger</div>
           <div className="muted">Reminders cron: {appUrl}/api/cron/reminders (every 15 minutes)</div>
+        </section>
+
+        <section className="card space-y-3 text-sm md:col-span-2">
+          <h2>AI replies (Messenger inquiries)</h2>
+          <p>
+            Kapag hindi tugma sa mga button o keyword ang message (hal. galing sa ad: &quot;interested po&quot;, &quot;may HMO ba?&quot;), ang AI ang
+            sasagot gamit lang ang clinic info: fees, promo, oras, location, services. Hindi ito nagbibigay ng medical advice. Kapag may
+            sintomas, sakit, gamot o resulta sa message, hindi ito ipinapadala sa AI at ipinapasa agad sa doktor.
+          </p>
+          <div>AI provider key: <b>{aiReady ? "Set" : "Not set yet (ANTHROPIC_API_KEY)"}</b> · Nagamit ngayong araw: <b>{aiUsed}</b> / {aiLimit}</div>
+          <form action={saveAiSettings} className="flex flex-wrap items-end gap-3">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="aiRepliesEnabled" defaultChecked={aiOn === "1"} disabled={!aiReady} /> I-on ang AI replies
+            </label>
+            <div>
+              <label className="label" htmlFor="aiDailyLimit">Max AI replies bawat araw</label>
+              <input id="aiDailyLimit" name="aiDailyLimit" type="number" min={0} max={5000} className="input w-28" defaultValue={aiLimit} />
+            </div>
+            <button className="btn">Save</button>
+          </form>
+          <p className="muted">Kapag naka-on, idinadagdag sa Privacy Notice na ang mga general na message ay pinoproseso ng AI provider.</p>
+          {aiReady && (
+            <div className="border-t border-slate-100 pt-3">
+              <h3 className="mb-2 font-semibold">Subukan muna</h3>
+              <AiTester />
+            </div>
+          )}
         </section>
 
         <section className="card space-y-2 text-sm md:col-span-2">

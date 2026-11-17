@@ -9,7 +9,7 @@ export const WINDOW_MS = 24 * 60 * 60 * 1000;
 export const HUMAN_AGENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type QuickReply = { title: string; payload: string };
-export type OutMessage = { text: string; quickReplies?: QuickReply[] };
+export type OutMessage = { text: string; quickReplies?: QuickReply[]; /** written by the AI (shown as "AI reply" in the inbox) */ byAi?: boolean };
 
 function graphBase() {
   return `https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v25.0"}`;

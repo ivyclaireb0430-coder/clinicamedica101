@@ -231,7 +231,7 @@ model Message {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   direction      String // IN | OUT
-  sender         String // PATIENT | BOT | DOCTOR | PAGE (sent from the Facebook Page inbox)
+  sender         String // PATIENT | BOT | AI | DOCTOR | PAGE (sent from the Facebook Page inbox)
   textEnc        String // encrypted: patients may share health details
   mid            String?      @unique // Meta message ID (dedupe webhook retries)
   status         String       @default("SENT") // SENT | FAILED

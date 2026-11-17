@@ -65,10 +65,10 @@ export default async function ConversationPage({ params, searchParams }: { param
       <div className="card mb-4 flex max-h-[55vh] flex-col-reverse gap-2 overflow-y-auto">
         {convo.messages.map((m) => (
           <div key={m.id} className={`flex ${m.direction === "OUT" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.direction === "OUT" ? (m.sender === "BOT" ? "bg-slate-100" : "bg-brand-600 text-white") : "border border-slate-200 bg-white"}`}>
+            <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.direction === "OUT" ? (m.sender === "BOT" || m.sender === "AI" ? "bg-slate-100" : "bg-brand-600 text-white") : "border border-slate-200 bg-white"}`}>
               <p className="whitespace-pre-wrap">{decrypt(m.textEnc)}</p>
-              <p className={`mt-1 text-[10px] ${m.direction === "OUT" && m.sender !== "BOT" ? "text-brand-100" : "text-slate-400"}`}>
-                {m.sender === "BOT" ? "Auto-reply" : m.sender === "PATIENT" ? "Patient" : m.sender === "PAGE" ? "Page inbox" : "You"} · {formatDateTime(m.createdAt)}
+              <p className={`mt-1 text-[10px] ${m.direction === "OUT" && m.sender !== "BOT" && m.sender !== "AI" ? "text-brand-100" : "text-slate-400"}`}>
+                {m.sender === "BOT" ? "Auto-reply" : m.sender === "AI" ? "AI reply" : m.sender === "PATIENT" ? "Patient" : m.sender === "PAGE" ? "Page inbox" : "You"} · {formatDateTime(m.createdAt)}
                 {m.status === "FAILED" ? " · not delivered" : ""}
               </p>
             </div>

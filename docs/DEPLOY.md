@@ -152,6 +152,17 @@ sudo systemctl restart clinic
 Ilagay ang `SEMAPHORE_API_KEY` at `SEMAPHORE_SENDER_NAME` (kapag approved na ang sender name), tapos i-restart.
 Kapag walang laman, naka-off ang SMS.
 
+### AI replies sa Messenger (Anthropic, may bayad bawat gamit, optional)
+
+1. Gumawa ng account sa https://console.anthropic.com, mag-load ng credits, at gumawa ng API key.
+   Sa Settings ng account, mag-set ng monthly spend limit (hal. $30) para may hangganan ang gastos.
+2. Ilagay sa `clinic.env`: `ANTHROPIC_API_KEY=...`, tapos `systemctl restart clinic`.
+3. Sa app: More → Messenger & reminders → **AI replies**. Subukan muna ang mga sample sa "Subukan muna".
+   Kapag okay na, i-check ang "I-on ang AI replies". Awtomatikong nadadagdag sa Privacy Notice ang AI section.
+4. Para i-off agad: alisin ang check. Babalik sa dating scripted bot (ipapasa sa staff ang hindi masagot).
+
+Ang mga message na may sintomas, sakit, gamot o resulta ay hindi ipinapadala sa AI; diretso sa doktor.
+
 ## Step 8. Off-site backup (recommended)
 
 Nasa server mismo ang daily backup (`/var/backups/clinic`, 30 araw). Para may kopya sa labas kung masira
