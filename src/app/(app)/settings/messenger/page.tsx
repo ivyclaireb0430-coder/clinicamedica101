@@ -4,7 +4,7 @@ import { formatDateTime } from "@/lib/time";
 import { messengerConfigured, REMINDER_TEMPLATE_BODY } from "@/lib/messenger/meta";
 import { googleConfigured } from "@/lib/google";
 import { BackLink, PageHeader } from "@/components/ui";
-import { saveFacebookKeys, saveAiApiKey, saveAiSettings, saveMessengerSettings, setupReminderTemplate } from "../actions";
+import { saveCommentSettings, saveFacebookKeys, saveAiApiKey, saveAiSettings, saveMessengerSettings, setupReminderTemplate } from "../actions";
 import { aiConfigured } from "@/lib/messenger/ai";
 import { aiApiKey, aiUsageToday } from "@/lib/messenger/ai-context";
 import { AiTester } from "./AiTester";
@@ -18,13 +18,14 @@ const FB_ERRORS: Record<string, string> = {
   username: "Page username (walang @ o space)",
 };
 
-export default async function MessengerSettings({ searchParams }: { searchParams: Promise<{ saved?: string; template?: string; template_error?: string; key_error?: string; fb_error?: string }> }) {
+export default async function MessengerSettings({ searchParams }: { searchParams: Promise<{ comment_error?: string; saved?: string; template?: string; template_error?: string; key_error?: string; fb_error?: string }> }) {
   await requirePermission("settings:manage");
   const sp = await searchParams;
   const [automation, reminders, sms, noShowHours, template] = await Promise.all([
     getSetting("automationEnabled"), getSetting("remindersEnabled"), getSetting("smsEnabled"), getSetting("autoNoShowHours"), getSetting("utilityTemplateName"),
   ]);
   const [aiOn, aiHealth, aiLimit, aiUsed] = await Promise.all([getSetting("aiRepliesEnabled"), getSetting("aiHealthInquiries"), getSetting("aiDailyLimit"), aiUsageToday()]);
+  const [commentOn, commentPrivate, commentPublic] = await Promise.all([getSetting("commentRepliesEnabled"), getSetting("commentPrivateText"), getSetting("commentPublicText")]);
   const fbFromServer = fieldsFromServer();
   const fbStored = await loadStoredMetaCreds().catch(() => ({}) as Partial<Record<MetaField, string>>);
   const verifyToken = process.env.META_VERIFY_TOKEN ?? "";
@@ -40,6 +41,7 @@ export default async function MessengerSettings({ searchParams }: { searchParams
       {sp.saved && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Saved.</p>}
       {sp.template && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Reminder template created on Meta.</p>}
       {sp.fb_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang mali ang {FB_ERRORS[sp.fb_error] ?? "Facebook key"}. Baka na-autofill ng browser ang email o password; burahin at ilagay ang tamang value.</p>}
+      {sp.comment_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Kulang o masyadong mahaba ang message para sa mga nag-comment.</p>}
       {sp.key_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang hindi buo ang API key. Dapat nagsisimula ito sa sk-ant- at walang ibang kasama.</p>}
       {sp.template_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Meta error: {sp.template_error}</p>}
 
@@ -158,6 +160,32 @@ export default async function MessengerSettings({ searchParams }: { searchParams
               <AiTester />
             </div>
           )}
+        </section>
+
+        <section className="card space-y-3 text-sm md:col-span-2">
+          <h2>Auto-message sa mga nag-comment (posts at ads)</h2>
+          <p>
+            Kapag may nag-comment sa post o ad ng Page, padadalhan sila ng isang private message sa Messenger. Kapag sumagot sila, ang bot at
+            AI na ang bahala, at lalabas ang usapan sa Inbox. Isang message lang bawat tao bawat post sa loob ng 7 araw.
+          </p>
+          <p className="muted">
+            Kailangan: sa Meta app, i-subscribe ang Page sa <b>feed</b> (bukod sa messages), at ang permission na pages_read_engagement
+            (at pages_manage_engagement para sa public reply). Huwag itong i-on habang naka-on pa ang Botcake, para hindi doble ang message.
+          </p>
+          <form action={saveCommentSettings} className="space-y-2">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="commentRepliesEnabled" defaultChecked={commentOn === "1"} /> I-on ang auto-message sa mga nag-comment
+            </label>
+            <div>
+              <label className="label" htmlFor="commentPrivateText">Private message sa Messenger ({"{name}"} = pangalan ng nag-comment)</label>
+              <textarea id="commentPrivateText" name="commentPrivateText" rows={3} maxLength={1000} className="input" defaultValue={commentPrivate} required />
+            </div>
+            <div>
+              <label className="label" htmlFor="commentPublicText">Public reply sa comment (iwanang blangko kung ayaw)</label>
+              <input id="commentPublicText" name="commentPublicText" maxLength={500} className="input" defaultValue={commentPublic} />
+            </div>
+            <button className="btn">Save</button>
+          </form>
         </section>
 
         <section className="card space-y-2 text-sm md:col-span-2">

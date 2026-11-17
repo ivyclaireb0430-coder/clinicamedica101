@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifySignature } from "@/lib/messenger/meta";
 import { handleEvent, type MessagingEvent } from "@/lib/messenger/handler";
 import { setSetting } from "@/lib/settings";
+import { handleFeedChange, type FeedChange } from "@/lib/messenger/comments";
 
 async function noteDelivery(key: "messengerLastOkAt" | "messengerLastBadSigAt") {
   try {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
     await noteDelivery("messengerLastBadSigAt");
     return new Response("Invalid signature", { status: 401 });
   }
-  let body: { object?: string; entry?: { messaging?: MessagingEvent[] }[] };
+  let body: { object?: string; entry?: { messaging?: MessagingEvent[]; changes?: FeedChange[] }[] };
   try {
     body = JSON.parse(raw);
   } catch {
@@ -45,6 +46,14 @@ export async function POST(req: Request) {
       } catch (err) {
         // Never log message content (may contain health details).
         console.error("Messenger event failed:", (err as Error).message);
+      }
+    }
+    // Comments on Page posts and ads ("feed" webhook field).
+    for (const change of entry.changes ?? []) {
+      try {
+        await handleFeedChange(change);
+      } catch (err) {
+        console.error("Comment event failed:", (err as Error).message);
       }
     }
   }

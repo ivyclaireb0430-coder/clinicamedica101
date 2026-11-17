@@ -226,6 +226,19 @@ model Conversation {
   @@index([lastMessageAt])
 }
 
+/// Comments on Page posts/ads that got an automatic private Messenger reply (one per comment; dedupes webhook retries).
+model CommentReply {
+  id        String   @id @default(cuid())
+  commentId String   @unique
+  postId    String?
+  fromId    String? // commenter's Facebook id as sent in the feed webhook
+  status    String // SENT | FAILED | SKIPPED
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([fromId, postId])
+}
+
 model Message {
   id             String       @id @default(cuid())
   conversationId String

@@ -35,7 +35,7 @@ async function campaignForRef(ref?: string) {
   return db.campaign.findUnique({ where: { trackingCode: ref.toLowerCase() } });
 }
 
-async function findOrCreateConversation(psid: string, ref?: string) {
+export async function findOrCreateConversation(psid: string, ref?: string, fallbackName?: string) {
   const existing = await db.conversation.findUnique({ where: { psid }, include: { lead: true } });
   if (existing) {
     if (ref && !existing.lead.campaignId) {
@@ -49,8 +49,8 @@ async function findOrCreateConversation(psid: string, ref?: string) {
     (await db.lead.findUnique({ where: { psid } })) ??
     (await db.lead.create({
       data: {
-        firstName: profile.firstName || "Messenger user",
-        lastName: profile.lastName,
+        firstName: profile.firstName || fallbackName?.split(/\s+/)[0] || "Messenger user",
+        lastName: profile.lastName ?? (fallbackName?.split(/\s+/).slice(1).join(" ") || null),
         psid,
         source: campaign ? channelToSource(campaign.channel) : "MESSENGER",
         campaignId: campaign?.id ?? null,
