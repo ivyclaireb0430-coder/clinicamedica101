@@ -208,21 +208,13 @@ async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): P
 }
 
 async function startBooking(ctx: BotContext, deps: BotDeps, rescheduleId?: string): Promise<BotResult> {
-  if (!ctx.privacyConsent) {
-    return {
-      replies: [
-        {
-          text: `Bago po tayo mag-book, paki-basa po ang aming privacy notice: ${ctx.privacyUrl}\nKukunin po namin ang inyong pangalan at mobile number para sa appointment. Sang-ayon po ba kayo?`,
-          quickReplies: [
-            { title: "Oo, sang-ayon ako", payload: "CONSENT_YES" },
-            { title: "Hindi muna", payload: "CONSENT_NO" },
-          ],
-        },
-      ],
-      state: { step: "CONSENT", rescheduleId },
-    };
-  }
-  return askType(ctx, deps, rescheduleId);
+  // No separate "Sang-ayon po ba kayo?" step (owner asked to drop it, Nov 18 2026): a short notice with the
+  // privacy link goes on the first booking message instead, so patients are still told what is collected.
+  const result = await askType(ctx, deps, rescheduleId);
+  if (ctx.privacyConsent || result.replies.length === 0) return result;
+  const [first, ...rest] = result.replies;
+  const notice = `Para sa appointment, kukunin po namin ang inyong pangalan at mobile number (privacy notice: ${ctx.privacyUrl}).`;
+  return { ...result, replies: [{ ...first, text: `${notice}\n\n${first.text}` }, ...rest] };
 }
 
 async function askType(ctx: BotContext, deps: BotDeps, rescheduleId?: string): Promise<BotResult> {

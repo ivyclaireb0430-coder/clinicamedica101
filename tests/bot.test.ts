@@ -67,12 +67,11 @@ describe("Messenger bot", () => {
     expect(r.replies).toEqual([]);
   });
 
-  it("runs the full booking flow: consent → slot → name → mobile → booked", async () => {
+  it("runs the full booking flow: slot → name → mobile → booked, with a privacy notice but no agree step", async () => {
     const d = deps();
     let r = await handleMessage(ctx(), IDLE, { payload: "MENU_BOOK" }, d);
-    expect(r.state.step).toBe("CONSENT");
-    r = await handleMessage(ctx(), r.state, { payload: "CONSENT_YES" }, d);
-    expect(d.recordConsent).toHaveBeenCalled();
+    expect(r.replies[0].text).toContain("https://clinic.test/privacy");
+    expect(d.recordConsent).not.toHaveBeenCalled();
     expect(r.state.step).toBe("PICK_SLOT"); // single consultation type skips the type step
     const slot = r.replies[0].quickReplies!.find((q) => q.payload.startsWith("SLOT:"))!;
     r = await handleMessage(ctx({ privacyConsent: true }), r.state, { payload: slot.payload }, d);
