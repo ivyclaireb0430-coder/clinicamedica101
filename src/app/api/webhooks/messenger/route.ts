@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     await noteDelivery("messengerLastBadSigAt");
     return new Response("Invalid signature", { status: 401 });
   }
-  let body: { object?: string; entry?: { messaging?: MessagingEvent[]; changes?: FeedChange[] }[] };
+  let body: { object?: string; entry?: { messaging?: MessagingEvent[]; standby?: MessagingEvent[]; changes?: FeedChange[] }[] };
   try {
     body = JSON.parse(raw);
   } catch {
@@ -46,6 +46,14 @@ export async function POST(req: Request) {
       } catch (err) {
         // Never log message content (may contain health details).
         console.error("Messenger event failed:", (err as Error).message);
+      }
+    }
+    // Standby: another app or the Page inbox controls this conversation. Record it, never reply.
+    for (const event of entry.standby ?? []) {
+      try {
+        await handleEvent(event, { observeOnly: true });
+      } catch (err) {
+        console.error("Messenger standby event failed:", (err as Error).message);
       }
     }
     // Comments on Page posts and ads ("feed" webhook field).
