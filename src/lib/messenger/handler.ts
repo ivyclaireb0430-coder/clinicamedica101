@@ -88,7 +88,11 @@ async function sendBotReplies(conversationId: string, psid: string, replies: Out
   }
 }
 
-export async function handleEvent(event: MessagingEvent): Promise<void> {
+/**
+ * observeOnly: a "standby" event, sent when another app or the Business Suite inbox controls the
+ * conversation. We record it for the clinic inbox but never reply, so we never compete with whoever owns it.
+ */
+export async function handleEvent(event: MessagingEvent, opts: { observeOnly?: boolean } = {}): Promise<void> {
   const msg = event.message;
 
   // Echo = a message the Page sent. If it wasn't sent by this app, the doctor replied from the
@@ -104,7 +108,9 @@ export async function handleEvent(event: MessagingEvent): Promise<void> {
     });
     await db.conversation.update({
       where: { id: conversation.id },
-      data: { automationPaused: true, pausedAt: new Date(), needsDoctor: false, lastMessageAt: new Date(), flowState: null },
+      data: opts.observeOnly
+        ? { lastMessageAt: new Date() }
+        : { automationPaused: true, pausedAt: new Date(), needsDoctor: false, lastMessageAt: new Date(), flowState: null },
     });
     return;
   }
@@ -137,6 +143,7 @@ export async function handleEvent(event: MessagingEvent): Promise<void> {
   });
   await db.lead.update({ where: { id: conversation.leadId }, data: { lastContactAt: now } });
 
+  if (opts.observeOnly) return;
   if ((await getSetting("automationEnabled")) !== "1" || conversation.automationPaused) return;
 
   const lead = conversation.lead;
