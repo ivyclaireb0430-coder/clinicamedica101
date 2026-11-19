@@ -330,6 +330,7 @@ const simSession = z.object({
   state: z.string().max(2000),
   name: z.string().max(120).optional(),
   mobile: z.string().max(30).optional(),
+  email: z.string().max(120).optional(),
   handedOff: z.boolean().optional(),
 });
 

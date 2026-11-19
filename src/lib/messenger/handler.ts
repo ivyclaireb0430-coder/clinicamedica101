@@ -174,6 +174,7 @@ export async function handleEvent(event: MessagingEvent, opts: { observeOnly?: b
       hasFullName: Boolean(lead.lastName) && lead.firstName !== "Messenger user",
       privacyConsent: lead.privacyConsent,
       mobile: lead.mobile,
+      email: lead.email,
       isNewConversation: isNew,
       upcoming: upcoming
         ? { id: upcoming.id, status: upcoming.status, dateLabel: formatDate(upcoming.startAt), timeLabel: formatTime(upcoming.startAt) }
@@ -240,6 +241,9 @@ function makeDeps(conversationId: string, leadId: string): BotDeps {
     },
     async saveMobile(mobile) {
       await db.lead.update({ where: { id: leadId }, data: { mobile } });
+    },
+    async saveEmail(email) {
+      await db.lead.update({ where: { id: leadId }, data: { email } });
     },
     async handoff() {
       await db.conversation.update({ where: { id: conversationId }, data: { needsDoctor: true, needsDoctorAt: new Date() } });

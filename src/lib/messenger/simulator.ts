@@ -17,6 +17,7 @@ export type SimSession = {
   state: string; // FlowState JSON
   name?: string;
   mobile?: string;
+  email?: string;
   handedOff?: boolean;
 };
 export type SimResult = { session: SimSession; notes: string[]; error?: string };
@@ -54,6 +55,10 @@ export async function simulateTurn(session: SimSession, input: Incoming, opts: {
       next.mobile = mobile;
       notes.push(`Ise-save sana ang mobile: ${mobile}`);
     },
+    async saveEmail(email) {
+      next.email = email;
+      notes.push(`Ise-save sana ang email: ${email}`);
+    },
     async handoff() {
       next.handedOff = true;
       notes.push("Aabisuhan sana ang doktor (lalabas sa 'Needs doctor reply').");
@@ -82,6 +87,7 @@ export async function simulateTurn(session: SimSession, input: Incoming, opts: {
       hasFullName: Boolean(next.name && next.name.trim().includes(" ")),
       privacyConsent: false,
       mobile: next.mobile ?? null,
+      email: next.email ?? null,
       isNewConversation: session.lines.length === 0,
       upcoming: null,
       recentlyHandedOff: Boolean(session.handedOff),
