@@ -1,12 +1,13 @@
 import { requirePermission } from "@/lib/session";
 import { BackLink, PageHeader } from "@/components/ui";
-import { SMTP_PRESETS, loadSmtp } from "@/lib/email";
-import { saveSmtpSettings, sendTestEmail } from "../actions";
+import { SMTP_PRESETS, loadBrevo, loadSmtp } from "@/lib/email";
+import { saveBrevoSettings, saveSmtpSettings, sendTestEmail } from "../actions";
 
 export default async function EmailSettings({ searchParams }: { searchParams: Promise<{ saved?: string; test?: string; error?: string }> }) {
   await requirePermission("settings:manage");
   const sp = await searchParams;
   const cfg = await loadSmtp();
+  const brevo = await loadBrevo();
   return (
     <>
       <BackLink href="/settings" label="Settings" />
@@ -20,7 +21,11 @@ export default async function EmailSettings({ searchParams }: { searchParams: Pr
           Dito manggagaling ang mga email sa pasyente (paalala ng appointment) at ang mga abiso sa doktor. Kapag naka-set ito, ito ang
           gagamitin. Kung wala, ang naka-connect na Google account ang gagamitin.
         </p>
-        <div>Status: <b>{cfg ? `Naka-set: ${cfg.user} (${cfg.host})` : "Hindi pa naka-set"}</b></div>
+        <div>Status: <b>{brevo ? `Brevo ang ginagamit: ${brevo.from}` : cfg ? `Naka-set: ${cfg.user} (${cfg.host}:${cfg.port})` : "Hindi pa naka-set"}</b></div>
+        <p className="muted">
+          Hinaharangan ng DigitalOcean ang ports 25, 465 at 587. Para sa GoDaddy, piliin ang &quot;Iba&quot; at gamitin ang
+          smtpout.secureserver.net port <b>3535</b>. Kung ayaw pa rin, gamitin ang Brevo sa ibaba.
+        </p>
         <form action={saveSmtpSettings} className="grid gap-2 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="label" htmlFor="preset">Saan naka-host ang email</label>
@@ -61,7 +66,33 @@ export default async function EmailSettings({ searchParams }: { searchParams: Pr
         <p className="muted text-xs">Naka-encrypt ang password at hindi na ipinapakita ulit.</p>
       </section>
 
-      {cfg && (
+      <section className="card mb-4 space-y-3 text-sm">
+        <h2>Brevo (kung naharang ang SMTP)</h2>
+        <p>
+          Libreng email service (hanggang 300 email bawat araw) na dumadaan sa HTTPS, kaya hindi ito naharang ng DigitalOcean.
+          doctor@clinicamedica101.org pa rin ang sender kapag na-verify ang domain sa Brevo. Kapag naka-set ito, ito ang gagamitin.
+        </p>
+        <form action={saveBrevoSettings} className="grid gap-2 md:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="from">Sender email</label>
+            <input id="from" name="from" type="email" className="input" defaultValue={brevo?.from ?? "doctor@clinicamedica101.org"} required />
+          </div>
+          <div>
+            <label className="label" htmlFor="brevoName">Pangalan ng sender</label>
+            <input id="brevoName" name="fromName" className="input" defaultValue={brevo?.fromName ?? "Clinica Medica 101"} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label" htmlFor="apiKey">Brevo API key (nagsisimula sa xkeysib-) {brevo ? "(iwanang blangko para hindi palitan)" : ""}</label>
+            <input id="apiKey" name="apiKey" type="text" className="input" autoComplete="off" spellCheck={false} style={{ WebkitTextSecurity: "disc" } as React.CSSProperties} data-1p-ignore data-lpignore="true" />
+          </div>
+          <div className="flex gap-2 md:col-span-2">
+            <button className="btn">I-save ang Brevo</button>
+            {brevo && <button className="btn-secondary" name="clear" value="1" formNoValidate>Alisin</button>}
+          </div>
+        </form>
+      </section>
+
+      {(cfg || brevo) && (
         <section className="card mb-4 space-y-2 text-sm">
           <h2>Subukan</h2>
           <form action={sendTestEmail} className="flex flex-wrap items-end gap-2">

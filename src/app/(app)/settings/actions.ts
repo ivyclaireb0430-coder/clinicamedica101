@@ -384,14 +384,31 @@ export async function saveSmtpSettings(formData: FormData) {
   redirect("/settings/email?saved=1");
 }
 
+export async function saveBrevoSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const { loadBrevo, saveBrevo } = await import("@/lib/email");
+  if (formData.get("clear") === "1") {
+    await saveBrevo(null);
+    await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "removed Brevo email" });
+    redirect("/settings/email?saved=1");
+  }
+  const existing = await loadBrevo();
+  const from = z.string().trim().toLowerCase().email().max(120).safeParse(formData.get("from"));
+  if (!from.success) redirect("/settings/email?error=" + encodeURIComponent("Mukhang mali ang sender email."));
+  const apiKey = String(formData.get("apiKey") ?? "").trim() || existing?.apiKey || "";
+  if (!/^xkeysib-[\w-]{20,}$/.test(apiKey)) redirect("/settings/email?error=" + encodeURIComponent("Mukhang hindi buo ang Brevo API key (nagsisimula sa xkeysib-)."));
+  await saveBrevo({ apiKey, from: from.data, fromName: String(formData.get("fromName") ?? "").trim().slice(0, 60) || "Clinica Medica 101" });
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: `Brevo email set: ${from.data}` });
+  redirect("/settings/email?saved=1");
+}
+
 export async function sendTestEmail(formData: FormData) {
   await requirePermission("settings:manage");
-  const { loadSmtp, sendSmtp } = await import("@/lib/email");
+  const { loadBrevo, loadSmtp, sendEmail } = await import("@/lib/email");
   const to = z.string().trim().email().safeParse(formData.get("to"));
   if (!to.success) redirect("/settings/email?error=" + encodeURIComponent("Mukhang mali ang email address."));
-  const cfg = await loadSmtp();
-  if (!cfg) redirect("/settings/email?error=" + encodeURIComponent("I-save muna ang email settings."));
-  const r = await sendSmtp(cfg, to.data, "Test mula sa Clinica Medica 101 app", "Gumagana ang email ng clinic app. Dito manggagaling ang mga paalala sa pasyente.");
+  if (!(await loadBrevo()) && !(await loadSmtp())) redirect("/settings/email?error=" + encodeURIComponent("I-save muna ang email settings."));
+  const r = await sendEmail(to.data, "Test mula sa Clinica Medica 101 app", "Gumagana ang email ng clinic app. Dito manggagaling ang mga paalala sa pasyente.");
   redirect(r.ok ? "/settings/email?test=ok" : "/settings/email?error=" + encodeURIComponent(r.error ?? "Hindi naipadala."));
 }
 
