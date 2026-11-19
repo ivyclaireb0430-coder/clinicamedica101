@@ -31,11 +31,10 @@ const deps = (over: Partial<BotDeps> = {}): BotDeps => ({
 const IDLE: FlowState = { step: "IDLE" };
 
 describe("Messenger bot", () => {
-  it("greets a new conversation with privacy notice and the menu", async () => {
+  it("greets a new conversation with the menu (a script may still link the privacy page)", async () => {
     const d = deps();
     const r = await handleMessage(ctx({ isNewConversation: true }), IDLE, { text: "Hello po" }, d);
     expect(r.replies[0].text).toContain("Hi Ana");
-    expect(r.replies[0].text).toContain("https://clinic.test/privacy");
     expect(r.replies[0].quickReplies?.map((q) => q.payload)).toContain("MENU_BOOK");
     expect(d.setStage).toHaveBeenCalledWith("REPLIED");
   });
@@ -67,10 +66,9 @@ describe("Messenger bot", () => {
     expect(r.replies).toEqual([]);
   });
 
-  it("runs the full booking flow: slot → name → mobile → booked, with a privacy notice but no agree step", async () => {
+  it("runs the full booking flow: slot → name → mobile → booked, with no agree step", async () => {
     const d = deps();
     let r = await handleMessage(ctx(), IDLE, { payload: "MENU_BOOK" }, d);
-    expect(r.replies[0].text).toContain("https://clinic.test/privacy");
     expect(d.recordConsent).not.toHaveBeenCalled();
     expect(r.state.step).toBe("PICK_SLOT"); // single consultation type skips the type step
     const slot = r.replies[0].quickReplies!.find((q) => q.payload.startsWith("SLOT:"))!;
@@ -121,5 +119,10 @@ describe("helpers", () => {
     expect(detectIntent("saan po location nyo")).toBe("MENU_LOCATION");
     expect(detectIntent("pa-book po")).toBe("MENU_BOOK");
     expect(detectIntent("may sakit ako")).toBeNull();
+  });
+
+  it("adds no privacy notice of its own", async () => {
+    const r = await handleMessage(ctx({ isNewConversation: true, scripts: { first_reply: "Hi {first_name}!" } }), IDLE, { text: "hi" }, deps());
+    expect(r.replies.map((x) => x.text).join("\n")).not.toContain("privacy");
   });
 });

@@ -164,10 +164,10 @@ describe("Messenger bot with AI", () => {
     expect(r.replies[0].byAi).toBe(false);
   });
 
-  it("adds the privacy notice to an AI reply on first contact", async () => {
+  it("sends the AI reply as is on first contact (no privacy notice added)", async () => {
     const d = deps({ ai: vi.fn(async () => ({ action: "answer" as const, reply: "Hello po! ₱1,000 po ang consult." })) });
     const r = await handleMessage(ctx({ isNewConversation: true }), { step: "IDLE" }, { text: "interested po" }, d);
-    expect(r.replies[0].text).toContain("https://clinic.test/privacy");
+    expect(r.replies[0].text).toBe("Hello po! ₱1,000 po ang consult.");
   });
 
   it("falls back to the scripted hand-off when the AI fails", async () => {
