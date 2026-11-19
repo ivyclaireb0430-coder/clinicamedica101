@@ -106,22 +106,9 @@ function script(ctx: BotContext, key: string, extra: Record<string, string> = {}
 
 const BACK_TO_MENU: QuickReply[] = [{ title: "Bumalik sa menu", payload: "MENU" }];
 
-/** The one privacy line patients see, on the bot's first reply in a new conversation (owner-approved wording). */
-export function privacyLine(url: string): string {
-  return `Privacy notice po namin: ${url}`;
-}
-
+// The bot adds no privacy notice of its own: the owner chose to drop it from the chat (Nov 19 2026, after being told
+// about the Data Privacy Act). The /privacy page stays up, and a script may still link it with [link].
 export async function handleMessage(ctx: BotContext, state: FlowState, input: Incoming, deps: BotDeps): Promise<BotResult> {
-  const result = await respond(ctx, state, input, deps);
-  if (!ctx.isNewConversation || result.replies.length === 0) return result;
-  if (ctx.privacyUrl && result.replies.some((r) => r.text.includes(ctx.privacyUrl))) return result; // a script already links it
-  const replies = [...result.replies];
-  const last = replies[replies.length - 1];
-  replies[replies.length - 1] = { ...last, text: `${last.text}\n\n${privacyLine(ctx.privacyUrl)}` };
-  return { ...result, replies };
-}
-
-async function respond(ctx: BotContext, state: FlowState, input: Incoming, deps: BotDeps): Promise<BotResult> {
   const text = input.text?.trim() ?? "";
   const payload = input.payload ?? "";
 
@@ -221,8 +208,7 @@ async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): P
 }
 
 async function startBooking(ctx: BotContext, deps: BotDeps, rescheduleId?: string): Promise<BotResult> {
-  // No "Sang-ayon po ba kayo?" step (owner asked to drop it, Nov 18 2026). The privacy link is the one line on
-  // the first reply of the conversation (see privacyLine).
+  // No "Sang-ayon po ba kayo?" step (owner asked to drop it, Nov 18 2026).
   return askType(ctx, deps, rescheduleId);
 }
 

@@ -31,11 +31,10 @@ const deps = (over: Partial<BotDeps> = {}): BotDeps => ({
 const IDLE: FlowState = { step: "IDLE" };
 
 describe("Messenger bot", () => {
-  it("greets a new conversation with privacy notice and the menu", async () => {
+  it("greets a new conversation with the menu (a script may still link the privacy page)", async () => {
     const d = deps();
     const r = await handleMessage(ctx({ isNewConversation: true }), IDLE, { text: "Hello po" }, d);
     expect(r.replies[0].text).toContain("Hi Ana");
-    expect(r.replies[0].text).toContain("https://clinic.test/privacy");
     expect(r.replies[0].quickReplies?.map((q) => q.payload)).toContain("MENU_BOOK");
     expect(d.setStage).toHaveBeenCalledWith("REPLIED");
   });
@@ -122,12 +121,8 @@ describe("helpers", () => {
     expect(detectIntent("may sakit ako")).toBeNull();
   });
 
-  it("adds exactly one short privacy line to the first reply of a new conversation", async () => {
+  it("adds no privacy notice of its own", async () => {
     const r = await handleMessage(ctx({ isNewConversation: true, scripts: { first_reply: "Hi {first_name}!" } }), IDLE, { text: "hi" }, deps());
-    const all = r.replies.map((x) => x.text).join("\n");
-    expect(all.match(/https:\/\/clinic\.test\/privacy/g)).toHaveLength(1);
-    expect(all).toContain("Privacy notice po namin: https://clinic.test/privacy");
-    const later = await handleMessage(ctx({ isNewConversation: false }), IDLE, { text: "hi" }, deps());
-    expect(later.replies.map((x) => x.text).join("\n")).not.toContain("privacy");
+    expect(r.replies.map((x) => x.text).join("\n")).not.toContain("privacy");
   });
 });
