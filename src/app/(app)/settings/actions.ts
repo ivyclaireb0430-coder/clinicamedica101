@@ -351,6 +351,50 @@ export async function practiceChatTurn(input: { session: unknown; text?: string;
   }
 }
 
+export async function saveSmtpSettings(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const { SMTP_PRESETS, loadSmtp, saveSmtp } = await import("@/lib/email");
+  if (formData.get("clear") === "1") {
+    await saveSmtp(null);
+    await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "removed clinic email (SMTP)" });
+    redirect("/settings/email?saved=1");
+  }
+  const existing = await loadSmtp();
+  const preset = SMTP_PRESETS[String(formData.get("preset") ?? "")];
+  const email = z.string().trim().toLowerCase().email().max(120).safeParse(formData.get("user"));
+  if (!email.success) redirect("/settings/email?error=" + encodeURIComponent("Mukhang mali ang email address."));
+  const pass = String(formData.get("pass") ?? "").trim() || existing?.pass || "";
+  if (!pass) redirect("/settings/email?error=" + encodeURIComponent("Ilagay ang password ng email."));
+  let host = preset?.host ?? String(formData.get("host") ?? "").trim();
+  let port = preset?.port ?? Number(formData.get("port"));
+  if (!/^[a-z0-9.-]{3,100}$/i.test(host) || !Number.isInteger(port) || port < 1 || port > 65535) {
+    redirect("/settings/email?error=" + encodeURIComponent("Ilagay ang tamang server at port."));
+  }
+  host = host.toLowerCase();
+  port = Number(port);
+  await saveSmtp({
+    host,
+    port,
+    security: preset?.security ?? (port === 465 ? "ssl" : "starttls"),
+    user: email.data,
+    pass,
+    fromName: String(formData.get("fromName") ?? "").trim().slice(0, 60) || "Clinica Medica 101",
+  });
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: `clinic email (SMTP) set: ${email.data} via ${host}` });
+  redirect("/settings/email?saved=1");
+}
+
+export async function sendTestEmail(formData: FormData) {
+  await requirePermission("settings:manage");
+  const { loadSmtp, sendSmtp } = await import("@/lib/email");
+  const to = z.string().trim().email().safeParse(formData.get("to"));
+  if (!to.success) redirect("/settings/email?error=" + encodeURIComponent("Mukhang mali ang email address."));
+  const cfg = await loadSmtp();
+  if (!cfg) redirect("/settings/email?error=" + encodeURIComponent("I-save muna ang email settings."));
+  const r = await sendSmtp(cfg, to.data, "Test mula sa Clinica Medica 101 app", "Gumagana ang email ng clinic app. Dito manggagaling ang mga paalala sa pasyente.");
+  redirect(r.ok ? "/settings/email?test=ok" : "/settings/email?error=" + encodeURIComponent(r.error ?? "Hindi naipadala."));
+}
+
 export type AiTestResult = { action?: string; reply?: string; note?: string; error?: string };
 
 /** Preview the AI reply to a sample message. Nothing is sent to any patient. */

@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { getSetting, setSetting } from "./settings";
-import { doctorEmail, sendGmail } from "./google";
+import { doctorEmail } from "./google";
+import { sendEmail } from "./email";
 
 const NOTIFY_THROTTLE_MS = 30 * 60 * 1000;
 
@@ -14,7 +15,7 @@ export async function notifyDoctor(now = new Date()): Promise<void> {
   const to = await doctorEmail();
   if (!to) return;
   const count = await db.conversation.count({ where: { needsDoctor: true } });
-  const result = await sendGmail(
+  const result = await sendEmail(
     to,
     `Clinica Medica 101: ${count} Messenger ${count === 1 ? "conversation needs" : "conversations need"} your reply`,
     `May ${count} na mensahe sa Messenger na kailangan ng sagot ng doktor.\n\nBuksan ang inbox: ${process.env.APP_URL ?? ""}/inbox\n\n(Walang patient details sa email na ito para sa privacy.)`,

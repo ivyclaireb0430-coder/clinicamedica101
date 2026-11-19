@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { getSetting, setSetting } from "./settings";
-import { doctorEmail, sendGmail } from "./google";
+import { doctorEmail } from "./google";
+import { sendEmail } from "./email";
 import { pctChange } from "./reports";
 import { addDays, formatPhp, manilaDateString, manilaTimeString, startOfWeek, weekdayOf } from "./time";
 import { periodFor, periodFunnel, periodMetrics, previousPeriod, rate, type FunnelRow, type Metrics, type Period } from "./dashboard";
@@ -70,7 +71,7 @@ export async function sendWeeklySummary(now = new Date()) {
   const to = configuredTo || (await doctorEmail());
   if (!to) return { ok: false, error: "No email address to send to", week: lastWeek.start };
   const text = weeklySummaryText({ period: lastWeek, prev, m, p, bySource: funnel.bySource, landingVisits: funnel.landingVisits, followUpsDue, needsDoctor, appUrl: process.env.APP_URL ?? "" });
-  const r = await sendGmail(to, `Clinica Medica 101 weekly summary: ${lastWeek.label}`, text);
+  const r = await sendEmail(to, `Clinica Medica 101 weekly summary: ${lastWeek.label}`, text);
   return { ...r, week: lastWeek.start, text };
 }
 

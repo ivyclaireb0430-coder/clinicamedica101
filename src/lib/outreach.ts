@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { renderScript } from "./scripts";
-import { sendGmail } from "./google";
+import { sendEmail } from "./email";
 import { sendSms, smsEnabled } from "./sms";
 import { sendText, sendUtilityTemplate, withinWindow } from "./messenger/meta";
 import { storeOutgoing } from "./messenger/handler";
@@ -54,7 +54,7 @@ export async function sendToContact(
     errors.push(r.error);
   }
   if (contact.email) {
-    const r = await sendGmail(contact.email, opts.subject, `${text}\n\nClinica Medica 101\nCenturia Medical Makati`);
+    const r = await sendEmail(contact.email, opts.subject, `${text}\n\nClinica Medica 101\nCenturia Medical Makati`);
     if (r.ok) return { channel: "EMAIL", ok: true };
     errors.push(r.error ?? "email failed");
   }
