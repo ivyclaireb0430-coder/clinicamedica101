@@ -2,7 +2,7 @@
 export const SCRIPTS = [
   {
     key: "first_reply", category: "Unang reply", title: "Unang reply (bagong inquiry)",
-    body: "Hi {first_name}! Salamat sa pag-message sa Clinica Medica 101. 😊 Para matulungan namin kayo nang maayos, ano po ang pangunahing concern ninyo? Bago po kayo magbahagi ng health details, paki-basa po ang aming privacy notice: [link]. Puwede rin po kayong pumili sa mga button sa ibaba.",
+    body: "Hi {first_name}! Salamat sa pag-message sa Clinica Medica 101. 😊 Para matulungan namin kayo nang maayos, ano po ang pangunahing concern ninyo? Puwede rin po kayong pumili sa mga button sa ibaba.",
   },
   {
     key: "approach", category: "Paliwanag", title: "Paano kami mag-assess (approach ng clinic)",

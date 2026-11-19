@@ -67,10 +67,9 @@ describe("Messenger bot", () => {
     expect(r.replies).toEqual([]);
   });
 
-  it("runs the full booking flow: slot → name → mobile → booked, with a privacy notice but no agree step", async () => {
+  it("runs the full booking flow: slot → name → mobile → booked, with no agree step", async () => {
     const d = deps();
     let r = await handleMessage(ctx(), IDLE, { payload: "MENU_BOOK" }, d);
-    expect(r.replies[0].text).toContain("https://clinic.test/privacy");
     expect(d.recordConsent).not.toHaveBeenCalled();
     expect(r.state.step).toBe("PICK_SLOT"); // single consultation type skips the type step
     const slot = r.replies[0].quickReplies!.find((q) => q.payload.startsWith("SLOT:"))!;
@@ -121,5 +120,14 @@ describe("helpers", () => {
     expect(detectIntent("saan po location nyo")).toBe("MENU_LOCATION");
     expect(detectIntent("pa-book po")).toBe("MENU_BOOK");
     expect(detectIntent("may sakit ako")).toBeNull();
+  });
+
+  it("adds exactly one short privacy line to the first reply of a new conversation", async () => {
+    const r = await handleMessage(ctx({ isNewConversation: true, scripts: { first_reply: "Hi {first_name}!" } }), IDLE, { text: "hi" }, deps());
+    const all = r.replies.map((x) => x.text).join("\n");
+    expect(all.match(/https:\/\/clinic\.test\/privacy/g)).toHaveLength(1);
+    expect(all).toContain("Privacy notice po namin: https://clinic.test/privacy");
+    const later = await handleMessage(ctx({ isNewConversation: false }), IDLE, { text: "hi" }, deps());
+    expect(later.replies.map((x) => x.text).join("\n")).not.toContain("privacy");
   });
 });
