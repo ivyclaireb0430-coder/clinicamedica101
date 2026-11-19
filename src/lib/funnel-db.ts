@@ -2,7 +2,8 @@ import { db } from "./db";
 import { decryptOptional, encryptOptional } from "./crypto";
 import { audit } from "./audit";
 import { getSetting, setSetting } from "./settings";
-import { doctorEmail, sendGmail } from "./google";
+import { doctorEmail } from "./google";
+import { sendEmail } from "./email";
 import { addDays, manilaDateString, manilaToUtc, todayManila } from "./time";
 import { openSlots } from "./slots";
 import { ACTIVE_APPOINTMENT_STATUSES } from "./constants";
@@ -110,7 +111,7 @@ export async function notifyWebInquiry(now = new Date()): Promise<void> {
   ]);
   if (count + booked === 0) return;
   const app = process.env.APP_URL ?? "";
-  const result = await sendGmail(
+  const result = await sendEmail(
     to,
     `Clinica Medica 101: website — ${booked} online ${booked === 1 ? "booking" : "bookings"}, ${count} ${count === 1 ? "inquiry" : "inquiries"} to call`,
     [
