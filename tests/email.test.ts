@@ -14,3 +14,27 @@ describe("clinic email (SMTP)", () => {
     expect(r.error).toBeTruthy();
   });
 });
+
+import { vi } from "vitest";
+import { sendBrevo } from "../src/lib/email";
+
+describe("Brevo email API", () => {
+  it("sends as the clinic sender and explains an unverified sender", async () => {
+    const calls: { url: string; body: unknown }[] = [];
+    const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init.body)) });
+      return calls.length === 1
+        ? new Response(JSON.stringify({ messageId: "x" }), { status: 201 })
+        : new Response(JSON.stringify({ message: "Sender is not valid" }), { status: 400 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const cfg = { apiKey: "xkeysib-abc", from: "doctor@clinicamedica101.org", fromName: "Clinica Medica 101" };
+    expect(await sendBrevo(cfg, "p@x.co", "Paalala", "Hi")).toEqual({ ok: true });
+    expect(calls[0].url).toBe("https://api.brevo.com/v3/smtp/email");
+    expect(calls[0].body).toMatchObject({ sender: { email: "doctor@clinicamedica101.org" }, to: [{ email: "p@x.co" }] });
+    const r = await sendBrevo(cfg, "p@x.co", "Paalala", "Hi");
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain("Hindi pa verified");
+    vi.unstubAllGlobals();
+  });
+});
