@@ -11,7 +11,8 @@ export type FlowState =
   | { step: "PICK_TYPE"; rescheduleId?: string }
   | { step: "PICK_SLOT"; typeId: string; page: number; rescheduleId?: string }
   | { step: "ASK_NAME"; typeId: string; startAt: string; rescheduleId?: string }
-  | { step: "ASK_MOBILE"; typeId: string; startAt: string; rescheduleId?: string };
+  | { step: "ASK_MOBILE"; typeId: string; startAt: string; rescheduleId?: string }
+  | { step: "ASK_EMAIL"; typeId: string; startAt: string; rescheduleId?: string };
 
 export type Incoming = { text?: string; payload?: string };
 
@@ -22,6 +23,7 @@ export type BotContext = {
   hasFullName: boolean;
   privacyConsent: boolean;
   mobile: string | null;
+  email?: string | null;
   isNewConversation: boolean;
   /** Next BOOKED/CONFIRMED appointment, if any. */
   upcoming: { id: string; status: string; dateLabel: string; timeLabel: string } | null;
@@ -41,6 +43,7 @@ export type BotDeps = {
   recordConsent(): Promise<void>;
   saveName(full: string): Promise<void>;
   saveMobile(mobile: string): Promise<void>;
+  saveEmail?(email: string): Promise<void>;
   handoff(): Promise<void>;
   setStage(stage: "REPLIED" | "FEE_EXPLAINED"): Promise<void>;
   /**
@@ -84,6 +87,37 @@ export function isConfirmation(text: string): boolean {
 }
 
 /** Normalize a Philippine mobile number to 09XXXXXXXXX, or null if invalid. */
+export function normalizeEmail(input: string): string | null {
+  const email = input.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(email) && email.length <= 120 ? email : null;
+}
+
+function pendingOf(state: { typeId: string; startAt: string; rescheduleId?: string }): Pending {
+  return { typeId: state.typeId, startAt: state.startAt, rescheduleId: state.rescheduleId };
+}
+
+const EMAIL_SKIP: QuickReply = { title: "Wala po akong email", payload: "EMAIL_SKIP" };
+
+type Pending = { typeId: string; startAt: string; rescheduleId?: string };
+
+/** Booking needs name, mobile and email (owner, Nov 19 2026). Ask for the next missing one, else book. */
+async function askNextOrBook(ctx: BotContext, deps: BotDeps, next: Pending): Promise<BotResult> {
+  if (next.rescheduleId) return finishBooking(ctx, deps, next);
+  if (!ctx.hasFullName) {
+    return { replies: [{ text: "Ano po ang inyong buong pangalan (first at last name)?" }], state: { step: "ASK_NAME", ...next } };
+  }
+  if (!ctx.mobile) {
+    return { replies: [{ text: `Salamat po, ${ctx.firstName}! Ano po ang inyong mobile number? (hal. 0917 123 4567)` }], state: { step: "ASK_MOBILE", ...next } };
+  }
+  if (!ctx.email) {
+    return {
+      replies: [{ text: "Ano po ang inyong email address?", quickReplies: [EMAIL_SKIP] }],
+      state: { step: "ASK_EMAIL", ...next },
+    };
+  }
+  return finishBooking(ctx, deps, next);
+}
+
 export function normalizePhMobile(input: string): string | null {
   const digits = input.replace(/[\s\-().]/g, "");
   const m = digits.match(/^(?:\+?63|0)?(9\d{9})$/);
@@ -289,11 +323,7 @@ async function continueFlow(ctx: BotContext, state: FlowState, input: Incoming, 
       if (payload.startsWith("MORE:")) return askSlot(ctx, deps, state.typeId, Number(payload.slice(5)) || 0, state.rescheduleId);
       if (payload.startsWith("SLOT:")) {
         const next = { typeId: state.typeId, startAt: payload.slice(5), rescheduleId: state.rescheduleId };
-        if (state.rescheduleId || (ctx.hasFullName && ctx.mobile)) return finishBooking(ctx, deps, next);
-        if (!ctx.hasFullName) {
-          return { replies: [{ text: "Ano po ang inyong buong pangalan (first at last name)?" }], state: { step: "ASK_NAME", ...next } };
-        }
-        return { replies: [{ text: "Ano po ang inyong mobile number? (hal. 0917 123 4567)" }], state: { step: "ASK_MOBILE", ...next } };
+        return askNextOrBook(ctx, deps, next);
       }
       return null;
     case "ASK_NAME":
@@ -301,11 +331,7 @@ async function continueFlow(ctx: BotContext, state: FlowState, input: Incoming, 
         if (text.length < 2 || text.length > 80) return { replies: [{ text: "Paki-type po ang inyong buong pangalan." }], state };
         await deps.saveName(text);
         const first = text.split(/\s+/)[0];
-        if (ctx.mobile) return finishBooking({ ...ctx, firstName: first }, deps, state);
-        return {
-          replies: [{ text: `Salamat po, ${first}! Ano po ang inyong mobile number? (hal. 0917 123 4567)` }],
-          state: { ...state, step: "ASK_MOBILE" },
-        };
+        return askNextOrBook({ ...ctx, firstName: first, hasFullName: true }, deps, pendingOf(state));
       }
       return null;
     case "ASK_MOBILE":
@@ -315,7 +341,20 @@ async function continueFlow(ctx: BotContext, state: FlowState, input: Incoming, 
           return { replies: [{ text: "Mukhang hindi tama ang number. Paki-type po ulit (hal. 0917 123 4567)." }], state };
         }
         await deps.saveMobile(mobile);
-        return finishBooking(ctx, deps, state);
+        // The name was already asked in this booking; a one-word name is accepted.
+        return askNextOrBook({ ...ctx, hasFullName: true, mobile }, deps, pendingOf(state));
+      }
+      return null;
+    case "ASK_EMAIL":
+      // Email is the last question: name and mobile were already asked in this booking.
+      if (payload === "EMAIL_SKIP") return finishBooking(ctx, deps, pendingOf(state));
+      if (text && !payload) {
+        const email = normalizeEmail(text);
+        if (!email) {
+          return { replies: [{ text: "Mukhang hindi tama ang email. Paki-type po ulit (hal. juan@gmail.com).", quickReplies: [EMAIL_SKIP] }], state };
+        }
+        await deps.saveEmail?.(email);
+        return finishBooking(ctx, deps, pendingOf(state));
       }
       return null;
     default:

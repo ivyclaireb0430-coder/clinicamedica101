@@ -23,6 +23,7 @@ const deps = (over: Partial<BotDeps> = {}): BotDeps => ({
   recordConsent: vi.fn(async () => {}),
   saveName: vi.fn(async () => {}),
   saveMobile: vi.fn(async () => {}),
+  saveEmail: vi.fn(async () => {}),
   handoff: vi.fn(async () => {}),
   setStage: vi.fn(async () => {}),
   ...over,
@@ -81,15 +82,37 @@ describe("Messenger bot", () => {
     expect(r.state.step).toBe("ASK_MOBILE"); // invalid number asks again
     r = await handleMessage(ctx({ privacyConsent: true }), r.state, { text: "0917 123 4567" }, d);
     expect(d.saveMobile).toHaveBeenCalledWith("09171234567");
+    expect(r.state.step).toBe("ASK_EMAIL");
+    expect(d.book).not.toHaveBeenCalled();
+    r = await handleMessage(ctx(), r.state, { text: "ana@gmail" }, d);
+    expect(r.state.step).toBe("ASK_EMAIL"); // invalid email asks again
+    r = await handleMessage(ctx(), r.state, { text: "Ana.Santos@Gmail.com" }, d);
+    expect(d.saveEmail).toHaveBeenCalledWith("ana.santos@gmail.com");
     expect(d.book).toHaveBeenCalled();
     expect(r.state.step).toBe("IDLE");
     expect(r.replies[0].text).toContain("Confirmed na po");
   });
 
+  it("books without an email when the patient has none", async () => {
+    const d = deps();
+    const state: FlowState = { step: "ASK_EMAIL", typeId: "t1", startAt: "2026-11-03T02:00:00.000Z" };
+    const r = await handleMessage(ctx({ hasFullName: true, mobile: "09171234567" }), state, { payload: "EMAIL_SKIP" }, d);
+    expect(d.saveEmail).not.toHaveBeenCalled();
+    expect(d.book).toHaveBeenCalled();
+  });
+
+  it("skips questions already answered on the lead", async () => {
+    const d = deps();
+    const state: FlowState = { step: "PICK_SLOT", typeId: "t1", page: 0 };
+    const r = await handleMessage(ctx({ hasFullName: true, mobile: "09171234567", email: "a@b.co" }), state, { payload: "SLOT:2026-11-03T02:00:00.000Z" }, d);
+    expect(d.book).toHaveBeenCalled();
+    expect(r.state.step).toBe("IDLE");
+  });
+
   it("offers slots again when the chosen time was just taken", async () => {
     const d = deps({ book: vi.fn(async () => ({ ok: false as const })) });
     const state: FlowState = { step: "PICK_SLOT", typeId: "t1", page: 0 };
-    const r = await handleMessage(ctx({ privacyConsent: true, hasFullName: true, mobile: "09171234567" }), state, { payload: "SLOT:2026-11-03T02:00:00.000Z" }, d);
+    const r = await handleMessage(ctx({ privacyConsent: true, hasFullName: true, mobile: "09171234567", email: "a@b.co" }), state, { payload: "SLOT:2026-11-03T02:00:00.000Z" }, d);
     expect(r.replies[0].text).toContain("may nauna nang nag-book");
     expect(r.state.step).toBe("PICK_SLOT");
   });
