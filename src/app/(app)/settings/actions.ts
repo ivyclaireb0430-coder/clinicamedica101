@@ -319,6 +319,37 @@ export async function saveCommentSettings(formData: FormData) {
   redirect("/settings/messenger?saved=1");
 }
 
+const simLine = z.object({
+  from: z.enum(["patient", "bot"]),
+  text: z.string().max(4000),
+  byAi: z.boolean().optional(),
+  quickReplies: z.array(z.object({ title: z.string().max(40), payload: z.string().max(200) })).max(13).optional(),
+});
+const simSession = z.object({
+  lines: z.array(simLine).max(80),
+  state: z.string().max(2000),
+  name: z.string().max(120).optional(),
+  mobile: z.string().max(30).optional(),
+  handedOff: z.boolean().optional(),
+});
+
+/** One turn of the practice chat (Settings → Messenger → Practice chat). Nothing is sent or saved. */
+export async function practiceChatTurn(input: { session: unknown; text?: string; payload?: string; useAi: boolean }) {
+  await requirePermission("settings:manage");
+  const { simulateTurn } = await import("@/lib/messenger/simulator");
+  const session = simSession.safeParse(input.session);
+  if (!session.success) return { error: "Nag-reset ang practice chat. Subukan ulit." };
+  const text = input.text?.trim().slice(0, 600) || undefined;
+  const payload = input.payload?.slice(0, 200) || undefined;
+  if (!text && !payload) return { error: "Mag-type ng message." };
+  try {
+    return await simulateTurn(session.data, { text, payload }, { useAi: input.useAi });
+  } catch (err) {
+    console.error("Practice chat failed:", (err as Error).message);
+    return { error: "May error sa practice chat. Subukan ulit." };
+  }
+}
+
 export type AiTestResult = { action?: string; reply?: string; note?: string; error?: string };
 
 /** Preview the AI reply to a sample message. Nothing is sent to any patient. */
