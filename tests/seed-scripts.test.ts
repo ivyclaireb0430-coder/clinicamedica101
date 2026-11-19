@@ -9,3 +9,12 @@ describe("saved scripts content", () => {
     }
   });
 });
+
+import { unfilledBlanks } from "../src/lib/scripts";
+
+describe("unfilledBlanks", () => {
+  it("finds [bracketed] blanks the clinic still has to fill", () => {
+    expect(unfilledBlanks("Fee po ay ₱[fee], mga [minutes] minuto. Link: [link] [fee]")).toEqual(["[fee]", "[minutes]", "[link]"]);
+    expect(unfilledBlanks("Fee po ay ₱2,500.")).toEqual([]);
+  });
+});

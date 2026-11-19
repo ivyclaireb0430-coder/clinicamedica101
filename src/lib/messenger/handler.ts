@@ -195,21 +195,24 @@ export async function handleEvent(event: MessagingEvent, opts: { observeOnly?: b
   await sendBotReplies(conversation.id, psid, result.replies);
 }
 
+/** Open slots offered in Messenger, a page at a time (read-only). */
+export async function findSlots(typeId: string, page: number): Promise<{ slots: Slot[]; hasMore: boolean }> {
+  const wanted = (page + 1) * SLOTS_PER_PAGE + 1;
+  const found: Slot[] = [];
+  for (let i = 0; i < SLOT_SEARCH_DAYS && found.length < wanted; i++) {
+    const day = addDays(todayManila(), i);
+    const open = await getOpenSlots(day, typeId);
+    // Offer at most 3 times per day so patients see a spread of days.
+    const spread = open.length > 3 ? [open[0], open[Math.floor(open.length / 2)], open[open.length - 1]] : open;
+    found.push(...spread.map((s) => ({ startAt: s.startAt, label: slotLabel(s.startAt) })));
+  }
+  const pageSlots = found.slice(page * SLOTS_PER_PAGE, (page + 1) * SLOTS_PER_PAGE);
+  return { slots: pageSlots, hasMore: found.length > (page + 1) * SLOTS_PER_PAGE };
+}
+
 function makeDeps(conversationId: string, leadId: string): BotDeps {
   return {
-    async slots(typeId, page) {
-      const wanted = (page + 1) * SLOTS_PER_PAGE + 1;
-      const found: Slot[] = [];
-      for (let i = 0; i < SLOT_SEARCH_DAYS && found.length < wanted; i++) {
-        const day = addDays(todayManila(), i);
-        const open = await getOpenSlots(day, typeId);
-        // Offer at most 3 times per day so patients see a spread of days.
-        const spread = open.length > 3 ? [open[0], open[Math.floor(open.length / 2)], open[open.length - 1]] : open;
-        found.push(...spread.map((s) => ({ startAt: s.startAt, label: slotLabel(s.startAt) })));
-      }
-      const pageSlots = found.slice(page * SLOTS_PER_PAGE, (page + 1) * SLOTS_PER_PAGE);
-      return { slots: pageSlots, hasMore: found.length > (page + 1) * SLOTS_PER_PAGE };
-    },
+    slots: findSlots,
     async book({ typeId, startAt, rescheduleId }) {
       try {
         const appt = rescheduleId

@@ -154,6 +154,10 @@ export default async function MessengerSettings({ searchParams }: { searchParams
             staff para gayahin ng AI ang tono ninyo.
           </p>
           <p className="muted">Kapag naka-on, idinadagdag sa Privacy Notice na ang mga general na message ay pinoproseso ng AI provider.</p>
+          <p>
+            <a className="btn-secondary inline-block" href="/settings/messenger/practice">Practice chat →</a>{" "}
+            <span className="muted">Kausapin ang buong bot (AI, buttons at booking) na parang pasyente. Walang ipinapadala.</span>
+          </p>
           {aiReady && (
             <div className="border-t border-slate-100 pt-3">
               <h3 className="mb-2 font-semibold">Subukan muna</h3>
