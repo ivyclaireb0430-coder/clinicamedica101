@@ -1,4 +1,4 @@
-import { renderScript } from "../scripts";
+import { renderScript, unfilledBlanks } from "../scripts";
 import type { OutMessage, QuickReply } from "./meta";
 import type { AiDecision } from "./ai";
 
@@ -134,6 +134,17 @@ export function parseState(json: string | null | undefined): FlowState {
   }
 }
 
+const INFO_QUESTIONS = {
+  MENU_FEE: "Magkano po ang consultation?",
+  MENU_LOCATION: "Saan po kayo located?",
+  MENU_HOW: "Paano po ang consultation ninyo?",
+} as const;
+const INFO_SCRIPTS: Record<keyof typeof INFO_QUESTIONS, string[]> = {
+  MENU_FEE: ["fee"],
+  MENU_LOCATION: ["location"],
+  MENU_HOW: ["approach", "first_consult"],
+};
+
 function script(ctx: BotContext, key: string, extra: Record<string, string> = {}) {
   return renderScript(ctx.scripts[key] ?? "", { first_name: ctx.firstName, ...extra }).replace("[link]", ctx.privacyUrl);
 }
@@ -167,6 +178,17 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
 
   let intent = payload || (text ? detectIntent(text) : null);
   if (intent === "RESCHED" && !ctx.upcoming) intent = "MENU_BOOK";
+
+  // Fee, location and "how it works": when the AI is on, it answers typed questions (so what the owner taught it in
+  // "Turuan ang AI" is used), and also button taps whose script still has unfilled [blanks].
+  if (deps.ai && intent && intent in INFO_QUESTIONS) {
+    const keys = INFO_SCRIPTS[intent as keyof typeof INFO_QUESTIONS];
+    const hasBlanks = keys.some((k) => unfilledBlanks(script(ctx, k)).length > 0);
+    if ((text && !payload) || hasBlanks) {
+      const decision = await deps.ai(text && !payload ? text : INFO_QUESTIONS[intent as keyof typeof INFO_QUESTIONS]);
+      if (decision?.reply) return aiResult(ctx, decision, deps);
+    }
+  }
 
   // Free text the scripts don't understand: let the AI answer general clinic questions, if it is on.
   if (!intent && text && !payload && deps.ai) {

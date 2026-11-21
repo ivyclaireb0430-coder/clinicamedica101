@@ -142,11 +142,34 @@ describe("Messenger bot with AI", () => {
     expect(d.handoff).not.toHaveBeenCalled();
   });
 
-  it("does not call the AI for keyword questions or button taps", async () => {
+  it("lets the AI answer typed fee/location questions, so what the owner taught it is used", async () => {
+    const ai = vi.fn(async () => ({ action: "answer" as const, reply: "₱1,000 po ang consultation." }));
+    const r = await handleMessage(ctx(), { step: "IDLE" }, { text: "magkano po?" }, deps({ ai }));
+    expect(ai).toHaveBeenCalledWith("magkano po?");
+    expect(r.replies[0]).toMatchObject({ text: "₱1,000 po ang consultation.", byAi: true });
+  });
+
+  it("uses the script for a button tap when the script is filled in", async () => {
     const ai = vi.fn();
-    await handleMessage(ctx(), { step: "IDLE" }, { text: "magkano po?" }, deps({ ai }));
-    await handleMessage(ctx(), { step: "IDLE" }, { payload: "MENU_LOCATION" }, deps({ ai }));
+    const filled = { ...scripts, location: "Nasa Makati po kami, Unit 5." };
+    const r = await handleMessage(ctx({ scripts: filled }), { step: "IDLE" }, { payload: "MENU_LOCATION" }, deps({ ai }));
     expect(ai).not.toHaveBeenCalled();
+    expect(r.replies[0].text).toBe("Nasa Makati po kami, Unit 5.");
+  });
+
+  it("asks the AI instead of sending a script with unfilled [blanks]", async () => {
+    const ai = vi.fn(async () => ({ action: "answer" as const, reply: "₱1,000 po." }));
+    const blank = { ...scripts, fee: "₱[fee] po ang consultation." };
+    const r = await handleMessage(ctx({ scripts: blank }), { step: "IDLE" }, { payload: "MENU_FEE" }, deps({ ai }));
+    expect(ai).toHaveBeenCalledWith("Magkano po ang consultation?");
+    expect(r.replies[0].text).toBe("₱1,000 po.");
+  });
+
+  it("falls back to the script when the AI gives no answer", async () => {
+    const ai = vi.fn(async () => null);
+    const filled = { ...scripts, fee: "₱1,000 po ang consultation." };
+    const r = await handleMessage(ctx({ scripts: filled }), { step: "IDLE" }, { text: "magkano po?" }, deps({ ai }));
+    expect(r.replies[0].text).toBe("₱1,000 po ang consultation.");
   });
 
   it("starts the booking buttons when the AI says book", async () => {
