@@ -39,15 +39,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
       {denied && <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Wala kayong access sa page na iyon.</p>}
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Today's appointments" value={todays.length} href={`/calendar?date=${today}`} />
-        <Stat label="Needs follow-up" value={followUps} href="/leads/follow-up" highlight={followUps > 0} />
-        <Stat label="Follow-ups due" value={followUpsDue} href="/followups" highlight={followUpsDue > 0} />
-        <Stat label="New inquiries this week" value={newThisWeek} href="/leads?stage=NEW" />
+        <Stat tone="sky" label="Today's appointments" value={todays.length} href={`/calendar?date=${today}`} />
+        <Stat tone="amber" label="Needs follow-up" value={followUps} href="/leads/follow-up" highlight={followUps > 0} />
+        <Stat tone="rose" label="Follow-ups due" value={followUpsDue} href="/followups" highlight={followUpsDue > 0} />
+        <Stat tone="violet" label="New inquiries this week" value={newThisWeek} href="/leads?stage=NEW" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="card">
-          <h2 className="mb-3">Today</h2>
+          <h2 className="mb-3 flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-sky-500" />Today</h2>
           {todays.length === 0 ? (
             <p className="muted">Walang appointment ngayong araw.</p>
           ) : (
@@ -64,12 +64,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
           )}
         </section>
         <section className="card">
-          <h2 className="mb-3">Pipeline</h2>
+          <h2 className="mb-3 flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-violet-500" />Pipeline</h2>
           <ul className="space-y-1 text-sm">
             {LEAD_STAGES.map((s) => (
               <li key={s.key}>
-                <Link href={`/leads?stage=${s.key}`} className="flex justify-between hover:underline">
-                  <span>{s.label}</span>
+                <Link href={`/leads?stage=${s.key}`} className="flex items-center justify-between rounded-md px-1 py-0.5 hover:bg-slate-50 hover:underline">
+                  <span className="flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-full ${STAGE_DOTS[s.key]}`} />{s.label}</span>
                   <b>{counts.find((c) => c.stage === s.key)?._count ?? 0}</b>
                 </Link>
               </li>
@@ -80,7 +80,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
 
       {showDashboard && (
         <div className="mt-8">
-          <h1 className="mb-3">Weekly dashboard</h1>
+          <h1 className="mb-3 flex items-center gap-2"><span className="h-6 w-1.5 rounded-full bg-gradient-to-b from-emerald-500 via-sky-500 to-violet-500" />Weekly dashboard</h1>
           <Dashboard period={period} />
         </div>
       )}
@@ -88,10 +88,30 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
   );
 }
 
-function Stat({ label, value, href, highlight }: { label: string; value: number; href: string; highlight?: boolean }) {
-  return (
-    <Link href={href} className={`card block hover:border-brand-500 ${highlight ? "border-amber-300 bg-amber-50" : ""}`}>
-      <div className="text-2xl font-semibold">{value}</div>
+const STAGE_DOTS: Record<string, string> = {
+  NEW: "bg-sky-500", REPLIED: "bg-indigo-500", FEE_EXPLAINED: "bg-violet-500", BOOKED: "bg-amber-500",
+  ATTENDED: "bg-emerald-500", PLAN_ACCEPTED: "bg-green-600", FOLLOW_UP: "bg-teal-500", LOST: "bg-slate-400",
+};
+
+// Each tile has its own colour; a tile that needs attention gets a stronger fill and a ring.
+const STAT_TONES = {
+  sky: { tile: "from-sky-500 to-blue-600", soft: "from-sky-50 to-white", text: "text-sky-700", ring: "ring-sky-300" },
+  amber: { tile: "from-amber-400 to-orange-500", soft: "from-amber-50 to-white", text: "text-amber-700", ring: "ring-amber-300" },
+  rose: { tile: "from-rose-500 to-pink-600", soft: "from-rose-50 to-white", text: "text-rose-700", ring: "ring-rose-300" },
+  violet: { tile: "from-violet-500 to-indigo-600", soft: "from-violet-50 to-white", text: "text-violet-700", ring: "ring-violet-300" },
+};
+
+function Stat({ label, value, href, highlight, tone }: { label: string; value: number; href: string; highlight?: boolean; tone: keyof typeof STAT_TONES }) {
+  const t = STAT_TONES[tone];
+  return highlight ? (
+    <Link href={href} className={`block rounded-xl bg-gradient-to-br p-4 text-white shadow-md ring-2 ring-offset-1 ${t.tile} ${t.ring} hover:brightness-105`}>
+      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-xs font-medium text-white/90">{label}</div>
+    </Link>
+  ) : (
+    <Link href={href} className={`card relative block overflow-hidden bg-gradient-to-br ${t.soft} hover:shadow-md`}>
+      <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${t.tile}`} aria-hidden="true" />
+      <div className={`text-2xl font-bold ${t.text}`}>{value}</div>
       <div className="muted text-xs">{label}</div>
     </Link>
   );

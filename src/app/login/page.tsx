@@ -29,7 +29,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error, enabled } = await searchParams;
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
-      <form action={login} className="card w-full max-w-sm space-y-4">
+      <form action={login} className="card relative w-full max-w-sm space-y-4 overflow-hidden pt-6">
+        <div className="absolute inset-x-0 top-0 flex h-1.5" aria-hidden="true">
+          <span className="flex-1 bg-emerald-500" /><span className="flex-1 bg-sky-500" /><span className="flex-1 bg-violet-500" /><span className="flex-1 bg-rose-500" /><span className="flex-1 bg-amber-400" />
+        </div>
         <div>
           <h1>Clinica Medica 101</h1>
           <p className="muted">Sign in to the clinic system</p>
