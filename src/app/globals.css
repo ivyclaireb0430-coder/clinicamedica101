@@ -3,8 +3,19 @@
 @tailwind utilities;
 
 @layer base {
-  /* Soft multi-colour wash behind every page (mint → sky → lavender), so the app isn't plain white. */
-  body { @apply bg-slate-50 text-slate-900 antialiased; background-image: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 45%, #f5f3ff 100%); background-attachment: fixed; }
+  /* Pastel background behind every page (mint, sky blue, lavender, pink, peach), so the app isn't plain white.
+     Cards stay white on top so text is easy to read. */
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    background-color: #eef6ff;
+    background-image:
+      radial-gradient(at 0% 0%, #c8f5e0 0px, transparent 55%),
+      radial-gradient(at 100% 0%, #d9e8ff 0px, transparent 55%),
+      radial-gradient(at 100% 100%, #fbd9ea 0px, transparent 55%),
+      radial-gradient(at 0% 100%, #ffe8cc 0px, transparent 55%),
+      linear-gradient(135deg, #d8f7ea 0%, #e3ecff 40%, #ece3ff 70%, #ffe4ef 100%);
+    background-attachment: fixed;
+  }
   h1 { @apply text-xl font-semibold text-slate-900; }
   h2 { @apply text-base font-semibold text-slate-800; }
   thead { @apply text-slate-500; }
