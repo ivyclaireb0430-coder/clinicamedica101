@@ -602,3 +602,12 @@ model AiExample {
 
   @@index([approved])
 }
+
+/// Things the owner taught the Messenger AI in the "Turuan ang AI" chat: tone rules and clinic facts.
+/// Added to the AI's clinic facts on every reply. Not patient data.
+model AiLesson {
+  id        String   @id @default(cuid())
+  kind      String // RULE | FACT
+  text      String
+  createdAt DateTime @default(now())
+}

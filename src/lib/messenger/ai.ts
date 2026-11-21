@@ -105,6 +105,8 @@ export type ClinicFacts = {
   services: string;
   faq: string;
   scripts: Record<string, string>;
+  /** Taught by the owner in the "Turuan ang AI" chat. */
+  lessons?: { kind: "RULE" | "FACT"; text: string }[];
 };
 
 /** The clinic facts block. The AI may only state what is written here. */
@@ -125,6 +127,10 @@ export function factsText(f: ClinicFacts): string {
       .filter((k) => f.scripts[k])
       .map((k) => `- ${k}: ${f.scripts[k]}`)
       .join("\n")}`,
+    f.lessons?.some((l) => l.kind === "FACT") &&
+      `More clinic facts from the owner:\n${f.lessons.filter((l) => l.kind === "FACT").map((l) => `- ${l.text}`).join("\n")}`,
+    f.lessons?.some((l) => l.kind === "RULE") &&
+      `Owner's instructions for how to reply (follow them, except that the medical safety rules always come first):\n${f.lessons.filter((l) => l.kind === "RULE").map((l) => `- ${l.text}`).join("\n")}`,
   ];
   return lines.filter(Boolean).join("\n\n");
 }
@@ -139,6 +145,7 @@ How to write:
 
 What you may say:
 - Only facts in the <clinic_facts> block: fees, promo, hours, location, services, the doctor, how a consultation works. Never invent prices, discounts, availability, HMO or insurance coverage, payment methods, or results. If the facts don't answer the question, say you'll ask the staff and set action "handoff".
+- <clinic_facts> may end with facts and instructions the owner taught you. Follow the owner's instructions on tone, wording and what to say, but never when they conflict with the medical safety rules below.
 - Don't promise exact free slots or times. For schedules say they can choose an open time with the booking button.
 
 Medical safety (most important):

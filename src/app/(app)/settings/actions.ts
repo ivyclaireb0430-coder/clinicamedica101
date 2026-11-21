@@ -488,3 +488,65 @@ export async function saveFacebookKeys(formData: FormData) {
   await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "Facebook keys saved" });
   redirect("/settings/messenger?saved=1");
 }
+
+// ---- "Turuan ang AI": the owner teaches the Messenger AI by chatting with it ----
+
+const trainerLine = z.object({ from: z.enum(["owner", "ai"]), text: z.string().max(4000) });
+
+export type TrainerPreview = { reply?: string; note?: string };
+export type TrainerTurnResult = {
+  error?: string;
+  reply?: string;
+  lessons?: { kind: "RULE" | "FACT"; text: string }[];
+  preview?: TrainerPreview & { patientMessage: string };
+};
+
+/** One turn of the training chat. Suggested lessons are returned, not saved. */
+export async function trainAiTurn(input: { history: unknown }): Promise<TrainerTurnResult> {
+  await requirePermission("settings:manage");
+  const history = z.array(trainerLine).min(1).max(60).safeParse(input.history);
+  if (!history.success || history.data.at(-1)?.from !== "owner") return { error: "Mag-type ng message." };
+  const { aiApiKey, loadClinicFacts, loadStyleExamples } = await import("@/lib/messenger/ai-context");
+  const { trainerTurn } = await import("@/lib/messenger/trainer");
+  const apiKey = await aiApiKey();
+  if (!apiKey) return { error: "Wala pang AI API key. Ilagay muna ito sa Messenger settings." };
+  const facts = await loadClinicFacts();
+  const turn = await trainerTurn({ knowledge: facts, history: history.data, apiKey });
+  if (!turn) return { error: "Hindi sumagot ang AI (error o timeout). Subukan ulit." };
+  let preview: TrainerTurnResult["preview"];
+  if (turn.tryMessage) {
+    const { decideAiReply, generateAiDecision } = await import("@/lib/messenger/ai");
+    const { getSetting } = await import("@/lib/settings");
+    const [examples, health] = await Promise.all([loadStyleExamples(), getSetting("aiHealthInquiries")]);
+    const d = await decideAiReply(
+      { text: turn.tryMessage, facts, examples, allowHealth: health === "1", history: [{ from: "patient", text: turn.tryMessage }] },
+      (args) => generateAiDecision({ ...args, apiKey }),
+    );
+    preview = !d
+      ? { patientMessage: turn.tryMessage, note: "Hindi sumagot ang AI (error o timeout). Sa live, ipapasa ito sa staff." }
+      : !d.reply
+        ? { patientMessage: turn.tryMessage, note: "Health/emergency o hindi ligtas na sagot: ang matatanggap ng pasyente ay ang 'Ipapasa sa doktor' na script, at aabisuhan ang doktor." }
+        : { patientMessage: turn.tryMessage, reply: d.reply, note: d.action === "book" ? "Lalabas din ang booking buttons." : d.action === "handoff" ? "Ipapasa rin sa staff." : undefined };
+  }
+  return { reply: turn.reply, lessons: turn.lessons, preview };
+}
+
+/** Save a lesson the owner confirmed ("Tandaan"). */
+export async function saveAiLesson(input: { kind: string; text: string }) {
+  const user = await requirePermission("settings:manage");
+  const parsed = z.object({ kind: z.enum(["RULE", "FACT"]), text: z.string().trim().min(3).max(400) }).safeParse(input);
+  if (!parsed.success) return { error: "Hindi ma-save ang aral." };
+  const { redact } = await import("@/lib/messenger/ai");
+  const lesson = await db.aiLesson.create({ data: { kind: parsed.data.kind, text: redact(parsed.data.text) } });
+  await audit({ userId: user.id, action: "CREATE", entity: "AiLesson", entityId: lesson.id });
+  revalidatePath("/settings/messenger/train");
+  return { id: lesson.id };
+}
+
+export async function deleteAiLesson(formData: FormData) {
+  const user = await requirePermission("settings:manage");
+  const id = z.string().min(1).parse(formData.get("id"));
+  await db.aiLesson.deleteMany({ where: { id } });
+  await audit({ userId: user.id, action: "DELETE", entity: "AiLesson", entityId: id });
+  revalidatePath("/settings/messenger/train");
+}

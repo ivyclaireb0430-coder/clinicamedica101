@@ -157,6 +157,10 @@ export default async function MessengerSettings({ searchParams }: { searchParams
           </p>
           <p className="muted">Kapag naka-on, idinadagdag sa Privacy Notice na ang mga general na message ay pinoproseso ng AI provider.</p>
           <p>
+            <a className="btn inline-block" href="/settings/messenger/train">Turuan ang AI →</a>{" "}
+            <span className="muted">Kausapin ang AI para turuan ito ng impormasyon at ng paraan ng pagsagot, gaya ng sa Meta AI.</span>
+          </p>
+          <p>
             <a className="btn-secondary inline-block" href="/settings/messenger/practice">Practice chat →</a>{" "}
             <span className="muted">Kausapin ang buong bot (AI, buttons at booking) na parang pasyente. Walang ipinapadala.</span>
           </p>

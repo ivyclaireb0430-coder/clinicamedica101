@@ -46,9 +46,10 @@ export async function loadClinicFacts(): Promise<string> {
     "landingOffer", "landingPromoName", "landingPromoOldPrice", "landingPromoPrice", "landingPromoDescEn", "siteServicesEn", "landingFaq",
   ] as const;
   const values = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await getSetting(k)] as const))) as Record<(typeof keys)[number], string>;
-  const [types, scripts] = await Promise.all([
+  const [types, scripts, lessons] = await Promise.all([
     db.consultationType.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     db.script.findMany({ select: { key: true, body: true } }),
+    loadLessons(),
   ]);
   return factsText({
     clinicName: values.clinicName,
@@ -66,7 +67,16 @@ export async function loadClinicFacts(): Promise<string> {
     services: values.siteServicesEn,
     faq: values.landingFaq,
     scripts: Object.fromEntries(scripts.map((s) => [s.key, s.body])),
+    lessons,
   });
+}
+
+export type Lesson = { id: string; kind: "RULE" | "FACT"; text: string; createdAt: Date };
+
+/** What the owner taught the AI, oldest first. */
+export async function loadLessons(): Promise<Lesson[]> {
+  const rows = await db.aiLesson.findMany({ orderBy: { createdAt: "asc" }, take: 200 });
+  return rows.map((r) => ({ ...r, kind: r.kind === "FACT" ? "FACT" : "RULE" }));
 }
 
 /** Recent messages of a conversation, oldest first (includes the message just received). */
