@@ -37,6 +37,9 @@ export default async function PracticeChatPage() {
           Practice lang ito: walang ipinapadala sa Facebook at walang nase-save na appointment o lead. Ang mga kulay-dilaw na linya ay
           nagsasabi kung ano sana ang gagawin ng app (hal. aabisuhan ang doktor).
         </p>
+        <p>
+          May gusto kayong baguhin sa sagot? <a className="underline" href="/settings/messenger/train">Turuan ang AI →</a>
+        </p>
       </section>
       <section className="card">
         <PracticeChat aiReady={aiReady} />
