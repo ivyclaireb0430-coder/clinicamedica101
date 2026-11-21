@@ -7,15 +7,28 @@ import {
 import { formatPhp, todayManila } from "@/lib/time";
 import { TrendChart } from "@/components/TrendChart";
 
-const TILES: { key: keyof Metrics; label: string; money?: boolean; lowerIsBetter?: boolean; hint?: string }[] = [
-  { key: "inquiries", label: "New inquiries" },
-  { key: "booked", label: "Consultations booked" },
-  { key: "attended", label: "Patients who attended" },
-  { key: "continuedTreatment", label: "Started treatment", hint: "Plans started (with consent) in this period" },
-  { key: "returned", label: "Returned for follow-up", hint: "Patients with a session or repeat consult" },
-  { key: "collected", label: "Collected", money: true },
-  { key: "outstanding", label: "Outstanding receivables", money: true, lowerIsBetter: true, hint: "As of the end of the period" },
+// One colour per tile: [top bar gradient, soft background, number colour]. Full class names so Tailwind keeps them.
+const TONES = {
+  sky: ["from-sky-400 to-blue-500", "from-sky-50", "text-sky-700"],
+  violet: ["from-violet-400 to-indigo-500", "from-violet-50", "text-violet-700"],
+  emerald: ["from-emerald-400 to-green-600", "from-emerald-50", "text-emerald-700"],
+  teal: ["from-teal-400 to-cyan-500", "from-teal-50", "text-teal-700"],
+  amber: ["from-amber-400 to-orange-500", "from-amber-50", "text-amber-700"],
+  green: ["from-lime-400 to-emerald-500", "from-lime-50", "text-green-700"],
+  rose: ["from-rose-400 to-pink-500", "from-rose-50", "text-rose-700"],
+} as const;
+
+const TILES: { key: keyof Metrics; label: string; tone: keyof typeof TONES; money?: boolean; lowerIsBetter?: boolean; hint?: string }[] = [
+  { key: "inquiries", label: "New inquiries", tone: "sky" },
+  { key: "booked", label: "Consultations booked", tone: "violet" },
+  { key: "attended", label: "Patients who attended", tone: "emerald" },
+  { key: "continuedTreatment", label: "Started treatment", tone: "teal", hint: "Plans started (with consent) in this period" },
+  { key: "returned", label: "Returned for follow-up", tone: "amber", hint: "Patients with a session or repeat consult" },
+  { key: "collected", label: "Collected", tone: "green", money: true },
+  { key: "outstanding", label: "Outstanding receivables", tone: "rose", money: true, lowerIsBetter: true, hint: "As of the end of the period" },
 ];
+
+const BAR_COLORS = ["from-sky-400 to-blue-500", "from-violet-400 to-indigo-500", "from-emerald-400 to-green-600", "from-amber-400 to-orange-500"];
 
 function Change({ now, before, lowerIsBetter }: { now: number; before: number; lowerIsBetter?: boolean }) {
   const pct = pctChange(now, before);
@@ -33,22 +46,22 @@ function FunnelTable({ title, rows, total }: { title: string; rows: FunnelRow[];
     <section className="card overflow-x-auto">
       <h2 className="mb-2">{title}</h2>
       <table className="w-full min-w-[560px] text-sm">
-        <thead className="text-left text-xs text-slate-500">
+        <thead className="bg-sky-50 text-left text-xs text-sky-900">
           <tr>
-            <th className="py-1">Source</th>{showVisits && <th className="text-right">Page visits</th>}<th className="text-right">Inquiries</th><th className="text-right">Booked</th>
-            <th className="text-right">Attended</th><th className="text-right">Treatment</th><th className="text-right">Revenue</th>
+            <th className="rounded-l-md px-1 py-1.5">Source</th>{showVisits && <th className="text-right">Page visits</th>}<th className="text-right">Inquiries</th><th className="text-right">Booked</th>
+            <th className="text-right">Attended</th><th className="text-right">Treatment</th><th className="rounded-r-md pr-1 text-right">Revenue</th>
           </tr>
         </thead>
         <tbody>
           {all.map((r) => (
-            <tr key={r.key} className={`border-t border-slate-100 ${r.key === "TOTAL" ? "font-semibold" : ""}`}>
-              <td className="py-1.5 pr-2">{r.label}</td>
+            <tr key={r.key} className={`border-t border-slate-100 ${r.key === "TOTAL" ? "bg-emerald-50 font-semibold text-emerald-900" : ""}`}>
+              <td className="px-1 py-1.5 pr-2">{r.label}</td>
               {showVisits && <td className="text-right">{r.visits ? r.visits : r.key === "TOTAL" ? "" : "—"}</td>}
               <td className="text-right">{r.inquiries}</td>
               <td className="text-right">{r.booked} <span className="muted text-xs">{pctText(rate(r.booked, r.inquiries))}</span></td>
               <td className="text-right">{r.attended} <span className="muted text-xs">{pctText(rate(r.attended, r.booked))}</span></td>
               <td className="text-right">{r.treatment} <span className="muted text-xs">{pctText(rate(r.treatment, r.attended))}</span></td>
-              <td className="text-right">{formatPhp(r.revenue)}</td>
+              <td className="pr-1 text-right">{formatPhp(r.revenue)}</td>
             </tr>
           ))}
           {rows.length === 0 && <tr><td colSpan={6} className="muted py-2">Walang bagong inquiry sa period na ito.</td></tr>}
@@ -78,7 +91,7 @@ export async function Dashboard({ period }: { period: Period }) {
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <div className="flex overflow-hidden rounded-lg border border-slate-200">
             {(["week", "month"] as const).map((k) => (
-              <Link key={k} href={`/?period=${k}&date=${period.start}`} className={`px-3 py-1.5 ${period.kind === k ? "bg-brand-600 text-white" : "bg-white text-slate-600"}`}>
+              <Link key={k} href={`/?period=${k}&date=${period.start}`} className={`px-3 py-1.5 ${period.kind === k ? "bg-gradient-to-r from-brand-600 to-teal-600 text-white" : "bg-white text-slate-600"}`}>
                 {k === "week" ? "Week" : "Month"}
               </Link>
             ))}
@@ -92,9 +105,10 @@ export async function Dashboard({ period }: { period: Period }) {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {TILES.map((tile) => (
-          <div key={tile.key} className="card" title={tile.hint}>
+          <div key={tile.key} className={`card relative overflow-hidden bg-gradient-to-br to-white ${TONES[tile.tone][1]}`} title={tile.hint}>
+            <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${TONES[tile.tone][0]}`} aria-hidden="true" />
             <div className="muted text-xs">{tile.label}</div>
-            <div className="text-2xl font-semibold">{tile.money ? formatPhp(m[tile.key] as number) : (m[tile.key] as number)}</div>
+            <div className={`text-2xl font-bold ${TONES[tile.tone][2]}`}>{tile.money ? formatPhp(m[tile.key] as number) : (m[tile.key] as number)}</div>
             <div className="text-xs">
               <Change now={m[tile.key] as number} before={p[tile.key] as number} lowerIsBetter={tile.lowerIsBetter} />{" "}
               <span className="muted">vs {tile.money ? formatPhp(p[tile.key] as number) : (p[tile.key] as number)}</span>
@@ -117,10 +131,10 @@ export async function Dashboard({ period }: { period: Period }) {
             ["Booked → attended", rate(t.attended, t.booked)],
             ["Attended → treatment", rate(t.treatment, t.attended)],
             ["Inquiry → attended", rate(t.attended, t.inquiries)],
-          ].map(([label, v]) => (
+          ].map(([label, v], i) => (
             <div key={label as string} className="mb-2">
               <div className="flex justify-between"><span>{label}</span><b>{pctText(v as number | null)}</b></div>
-              <div className="mt-1 h-1.5 rounded-full bg-slate-100"><div className="h-1.5 rounded-full bg-brand-600" style={{ width: `${v ?? 0}%` }} /></div>
+              <div className="mt-1 h-1.5 rounded-full bg-slate-100"><div className={`h-1.5 rounded-full bg-gradient-to-r ${BAR_COLORS[i]}`} style={{ width: `${v ?? 0}%` }} /></div>
             </div>
           ))}
         </section>

@@ -5,6 +5,9 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1>{title}</h1>
+        <div className="mt-1 flex h-1 w-16 overflow-hidden rounded-full print:hidden" aria-hidden="true">
+          <span className="flex-1 bg-emerald-500" /><span className="flex-1 bg-sky-500" /><span className="flex-1 bg-violet-500" /><span className="flex-1 bg-amber-400" />
+        </div>
         {subtitle && <p className="muted">{subtitle}</p>}
       </div>
       {action}
@@ -37,7 +40,7 @@ export function StatusBadge({ status, label }: { status: string; label: string }
 
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="mb-3 inline-block text-sm text-brand-700 hover:underline">
+    <Link href={href} className="mb-3 inline-block text-sm font-medium text-sky-700 hover:underline">
       ← {label}
     </Link>
   );
