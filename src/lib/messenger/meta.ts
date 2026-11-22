@@ -9,7 +9,33 @@ export const WINDOW_MS = 24 * 60 * 60 * 1000;
 export const HUMAN_AGENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type QuickReply = { title: string; payload: string };
-export type OutMessage = { text: string; quickReplies?: QuickReply[]; /** written by the AI (shown as "AI reply" in the inbox) */ byAi?: boolean };
+export type OutMessage = {
+  text: string;
+  quickReplies?: QuickReply[];
+  /** written by the AI (shown as "AI reply" in the inbox) */
+  byAi?: boolean;
+  /** A button under the text that opens a web page, e.g. the booking form. */
+  button?: { title: string; url: string };
+};
+
+/** The Send API "message" object: plain text, or a button template when there is a link button. */
+export function messageBody(msg: OutMessage) {
+  const quick = msg.quickReplies?.length ? { quick_replies: toQuickReplies(msg.quickReplies) } : {};
+  if (msg.button) {
+    return {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: msg.text.slice(0, 640),
+          buttons: [{ type: "web_url", url: msg.button.url, title: msg.button.title.slice(0, 20), webview_height_ratio: "full" }],
+        },
+      },
+      ...quick,
+    };
+  }
+  return { text: msg.text.slice(0, 1999), ...quick };
+}
 
 function graphBase() {
   return `https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v25.0"}`;
@@ -62,7 +88,7 @@ export async function sendText(
     recipient: { id: psid },
     messaging_type: mode === "HUMAN_AGENT" ? "MESSAGE_TAG" : "RESPONSE",
     ...(mode === "HUMAN_AGENT" ? { tag: "HUMAN_AGENT" } : {}),
-    message: { text: msg.text.slice(0, 1999), ...(msg.quickReplies?.length ? { quick_replies: toQuickReplies(msg.quickReplies) } : {}) },
+    message: messageBody(msg),
   });
 }
 

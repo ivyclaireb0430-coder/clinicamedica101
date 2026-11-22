@@ -67,6 +67,22 @@ describe("Messenger bot", () => {
     expect(r.replies).toEqual([]);
   });
 
+  it("sends the booking form link (calendar + details) instead of the chat flow when a link is available", async () => {
+    const d = deps();
+    const r = await handleMessage(ctx({ bookingUrl: "https://clinic.test/book/tok" }), IDLE, { text: "magbook po ako" }, d);
+    expect(r.state.step).toBe("IDLE");
+    expect(r.replies[0].button).toEqual({ title: "📅 Pumili ng petsa", url: "https://clinic.test/book/tok" });
+    expect(d.slots).not.toHaveBeenCalled();
+  });
+
+  it("keeps rescheduling in the chat even when a booking link is available", async () => {
+    const d = deps();
+    const upcoming = { id: "a1", status: "BOOKED", dateLabel: "Tue, Nov 3, 2026", timeLabel: "10:00 AM" };
+    const r = await handleMessage(ctx({ bookingUrl: "https://clinic.test/book/tok", upcoming }), IDLE, { text: "resched po" }, d);
+    expect(r.replies[0].button).toBeUndefined();
+    expect(r.state.step).toBe("PICK_SLOT");
+  });
+
   it("runs the full booking flow: slot → name → mobile → booked, with no agree step", async () => {
     const d = deps();
     let r = await handleMessage(ctx(), IDLE, { payload: "MENU_BOOK" }, d);
