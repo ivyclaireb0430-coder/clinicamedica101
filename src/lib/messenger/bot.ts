@@ -32,6 +32,8 @@ export type BotContext = {
   scripts: Record<string, string>;
   consultationTypes: { id: string; name: string; feeLabel: string }[];
   privacyUrl: string;
+  /** Booking form with a calendar (name, mobile, email, date). When set, "Mag-book" sends this link. */
+  bookingUrl?: string | null;
 };
 
 export type BotDeps = {
@@ -70,7 +72,7 @@ const INTENTS: [RegExp, string][] = [
   [/\b(resched|reschedule|ibang (araw|oras)|palitan|move)\b/i, "RESCHED"],
   [/\b(magkano|presyo|price|how much|fee|bayad|rate|cost)\b/i, "MENU_FEE"],
   [/\b(saan|where|location|address|lokasyon|parking|direksyon)\b/i, "MENU_LOCATION"],
-  [/\b(book|booking|appointment|appt|magpa-?schedule|pa-?book|pa-?sched)\b/i, "MENU_BOOK"],
+  [/\b(mag-?book|book|booking|appointment|appt|magpa-?schedule|pa-?book|pa-?sched)\b/i, "MENU_BOOK"],
   [/\b(schedule|sched|available|bakante|open|clinic hours|oras)\b/i, "MENU_SCHED"],
   [/\b(paano|how does|process|proseso|ano ang mangyayari)\b/i, "MENU_HOW"],
   [/\b(doktor|doctor|doc|dra?\.?)\b/i, "MENU_DOCTOR"],
@@ -263,7 +265,17 @@ async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): P
   return { replies: [{ text: decision.reply, quickReplies: MENU, byAi: true }], state: IDLE };
 }
 
+export const BOOKING_LINK_TEXT =
+  "Pindutin lang po ang button sa ibaba. Doon po kayo pipili ng petsa at oras sa calendar at ilalagay ang inyong pangalan, mobile number at email. 😊";
+
 async function startBooking(ctx: BotContext, deps: BotDeps, rescheduleId?: string): Promise<BotResult> {
+  // New bookings use the form with a calendar: one step, and far-off dates are easy to reach (owner, Nov 23 2026).
+  if (!rescheduleId && ctx.bookingUrl) {
+    return {
+      replies: [{ text: BOOKING_LINK_TEXT, button: { title: "📅 Pumili ng petsa", url: ctx.bookingUrl }, quickReplies: BACK_TO_MENU }],
+      state: IDLE,
+    };
+  }
   // No "Sang-ayon po ba kayo?" step (owner asked to drop it, Nov 18 2026).
   return askType(ctx, deps, rescheduleId);
 }

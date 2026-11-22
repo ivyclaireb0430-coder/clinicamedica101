@@ -8,6 +8,7 @@ import { notifyDoctor } from "../notify";
 import { fetchProfile, sendText, type OutMessage } from "./meta";
 import { decideAiReply, generateAiDecision } from "./ai";
 import { aiApiKey, aiEnabled, loadClinicFacts, loadHistory, loadStyleExamples, takeAiQuota } from "./ai-context";
+import { bookingUrl } from "./booking-link";
 import { handleMessage, parseState, type BotDeps, type FlowState, type Slot } from "./bot";
 
 const SLOTS_PER_PAGE = 6;
@@ -84,7 +85,8 @@ export async function storeOutgoing(conversationId: string, text: string, sender
 async function sendBotReplies(conversationId: string, psid: string, replies: OutMessage[]) {
   for (const reply of replies) {
     const result = await sendText(psid, reply);
-    await storeOutgoing(conversationId, reply.text, reply.byAi ? "AI" : "BOT", result);
+    const shown = reply.button ? `${reply.text}\n[${reply.button.title}]` : reply.text;
+    await storeOutgoing(conversationId, shown, reply.byAi ? "AI" : "BOT", result);
   }
 }
 
@@ -183,6 +185,7 @@ export async function handleEvent(event: MessagingEvent, opts: { observeOnly?: b
       scripts: Object.fromEntries(scripts.map((s) => [s.key, s.body])),
       consultationTypes: types.map((t) => ({ id: t.id, name: t.name, feeLabel: formatPhp(t.feePhp) })),
       privacyUrl: `${process.env.APP_URL ?? ""}/privacy`,
+      bookingUrl: bookingUrl(conversation.id),
     },
     state,
     { text, payload },
