@@ -110,6 +110,15 @@ export async function sendPrivateReply(commentId: string, text: string): Promise
   return { recipientId: json.recipient_id, message_id: json.message_id };
 }
 
+export const WEBHOOK_FIELDS = "messages,messaging_postbacks,messaging_referrals,message_echoes";
+
+/** (Re)subscribe this app to the Page's Messenger webhook events. Uses pages_manage_metadata. */
+export async function subscribePageWebhooks(): Promise<{ error?: string }> {
+  if (!messengerConfigured()) return { error: "Messenger is not configured" };
+  const r = await post(`/${process.env.META_PAGE_ID}/subscribed_apps`, { subscribed_fields: WEBHOOK_FIELDS });
+  return r.error ? { error: r.error } : {};
+}
+
 /** Public reply under a comment (needs pages_manage_engagement). */
 export async function replyToComment(commentId: string, text: string): Promise<{ error?: string }> {
   if (!messengerConfigured()) return { error: "Messenger is not configured" };

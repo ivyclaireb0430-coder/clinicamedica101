@@ -158,6 +158,16 @@ export async function saveMessengerSettings(formData: FormData) {
   redirect("/settings/messenger?saved=1");
 }
 
+/** Re-subscribe the Page to Messenger webhook events (also the pages_manage_metadata test call for App Review). */
+export async function resubscribeWebhooks() {
+  const user = await requirePermission("settings:manage");
+  const { subscribePageWebhooks } = await import("@/lib/messenger/meta");
+  const result = await subscribePageWebhooks();
+  if (result.error) redirect(`/settings/messenger?webhook_error=${encodeURIComponent(result.error.slice(0, 200))}`);
+  await audit({ userId: user.id, action: "UPDATE", entity: "Setting", detail: "Messenger webhook subscription refreshed" });
+  redirect("/settings/messenger?webhook=1");
+}
+
 export async function setupReminderTemplate() {
   const user = await requirePermission("settings:manage");
   const name = "cm101_appointment_reminder";
