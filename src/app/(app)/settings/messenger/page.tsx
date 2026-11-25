@@ -5,7 +5,7 @@ import { messengerConfigured, REMINDER_TEMPLATE_BODY } from "@/lib/messenger/met
 import { googleConfigured } from "@/lib/google";
 import { loadSmtp } from "@/lib/email";
 import { BackLink, PageHeader } from "@/components/ui";
-import { saveCommentSettings, saveFacebookKeys, saveAiApiKey, saveAiSettings, saveMessengerSettings, setupReminderTemplate } from "../actions";
+import { saveCommentSettings, saveFacebookKeys, saveAiApiKey, saveAiSettings, resubscribeWebhooks, saveMessengerSettings, setupReminderTemplate } from "../actions";
 import { aiConfigured } from "@/lib/messenger/ai";
 import { aiApiKey, aiUsageToday } from "@/lib/messenger/ai-context";
 import { AiTester } from "./AiTester";
@@ -19,7 +19,7 @@ const FB_ERRORS: Record<string, string> = {
   username: "Page username (walang @ o space)",
 };
 
-export default async function MessengerSettings({ searchParams }: { searchParams: Promise<{ comment_error?: string; saved?: string; template?: string; template_error?: string; key_error?: string; fb_error?: string }> }) {
+export default async function MessengerSettings({ searchParams }: { searchParams: Promise<{ comment_error?: string; saved?: string; template?: string; template_error?: string; key_error?: string; fb_error?: string; webhook?: string; webhook_error?: string }> }) {
   await requirePermission("settings:manage");
   const sp = await searchParams;
   const [automation, reminders, sms, noShowHours, template] = await Promise.all([
@@ -42,6 +42,8 @@ export default async function MessengerSettings({ searchParams }: { searchParams
       <PageHeader title="Messenger & reminders" />
       {sp.saved && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Saved.</p>}
       {sp.template && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Reminder template created on Meta.</p>}
+      {sp.webhook && <p className="mb-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">Naka-subscribe na ulit ang Page sa Messenger webhook. ✅</p>}
+      {sp.webhook_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Hindi na-subscribe ang webhook: {sp.webhook_error}</p>}
       {sp.fb_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang mali ang {FB_ERRORS[sp.fb_error] ?? "Facebook key"}. Baka na-autofill ng browser ang email o password; burahin at ilagay ang tamang value.</p>}
       {sp.comment_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Kulang o masyadong mahaba ang message para sa mga nag-comment.</p>}
       {sp.key_error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mukhang hindi buo ang API key. Dapat nagsisimula ito sa sk-ant- at walang ibang kasama.</p>}
@@ -195,6 +197,17 @@ export default async function MessengerSettings({ searchParams }: { searchParams
               <input id="commentPublicText" name="commentPublicText" maxLength={500} className="input" defaultValue={commentPublic} />
             </div>
             <button className="btn">Save</button>
+          </form>
+        </section>
+
+        <section className="card space-y-2 text-sm md:col-span-2">
+          <h2>Webhook ng Page</h2>
+          <p>
+            I-click kung hindi dumarating sa Inbox ang mga message, o pagkatapos palitan ang Page. Ise-subscribe ulit ang Page sa
+            messages, postbacks, referrals at echoes.
+          </p>
+          <form action={resubscribeWebhooks}>
+            <button className="btn-secondary" disabled={!messengerConfigured()}>I-subscribe ulit ang webhook</button>
           </form>
         </section>
 
