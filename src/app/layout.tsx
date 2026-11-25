@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./dark-colors.css";
+import "./dark-mode.css";
 
 export const metadata: Metadata = {
   title: "Clinica Medica 101",
@@ -13,7 +15,12 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the script below may add the "dark" class before React loads.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apply the saved light/dark choice before the first paint (see ThemeToggle). */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}` }} />
+      </head>
       <body>{children}</body>
     </html>
   );

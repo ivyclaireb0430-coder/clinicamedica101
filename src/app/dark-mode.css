@@ -1,0 +1,47 @@
+/* Dark mode for the staff app. Turned on with the "Dark mode" button (saved per device); adds the "dark" class to <html>.
+   Only the staff app (.app-shell) changes: the public website, landing pages, intake/feedback forms and printouts stay light.
+   Colour tints (bg-sky-50, text-violet-700, …) are mapped in dark-colors.css. */
+@media screen {
+  .dark { color-scheme: dark; }
+  .dark body:has(.app-shell) {
+    background-color: #0b1220;
+    background-image:
+      radial-gradient(at 0% 0%, rgb(16 185 129 / 0.16) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgb(59 130 246 / 0.16) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgb(236 72 153 / 0.13) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgb(245 158 11 / 0.10) 0px, transparent 50%),
+      linear-gradient(135deg, #0b1a1a 0%, #0c1426 50%, #160f26 100%);
+    background-attachment: fixed;
+    color: #e2e8f0;
+  }
+  .dark .app-shell { color: #e2e8f0; }
+  .dark .app-shell h1, .dark .app-shell h2, .dark .app-shell h3 { color: #f1f5f9; }
+  .dark .app-shell thead { color: #94a3b8; }
+
+  /* Surfaces */
+  .dark .app-shell .card { background-color: #151f32; border-color: rgb(255 255 255 / 0.06); --tw-ring-color: rgb(148 163 184 / 0.14); --tw-shadow-color: rgb(0 0 0 / 0.35); }
+  .dark .app-shell .bg-white { background-color: #151f32; }
+  .dark .app-shell .to-white { --tw-gradient-to: #151f32 var(--tw-gradient-to-position); }
+  .dark .app-shell .muted { color: #94a3b8; }
+  .dark .app-shell .badge:not([class*="bg-"]) { background-color: rgb(148 163 184 / 0.18); }
+  .dark .app-shell .badge:not([class*="text-"]) { color: #e2e8f0; }
+  .dark .app-shell .label { color: #cbd5e1; }
+  .dark .app-shell .input, .dark .app-shell select, .dark .app-shell textarea, .dark .app-shell input:not([type=checkbox]):not([type=radio]):not([type=submit]) {
+    background-color: #0f172a; border-color: rgb(148 163 184 / 0.3); color: #f1f5f9;
+  }
+  .dark .app-shell .input:focus { --tw-ring-color: rgb(47 143 116 / 0.35); }
+  .dark .app-shell ::placeholder { color: #64748b; }
+  .dark .app-shell .btn-secondary { background-color: #151f32; border-color: rgb(56 189 248 / 0.35); color: #7dd3fc; }
+  .dark .app-shell .btn-secondary:hover { background-color: rgb(56 189 248 / 0.12); }
+  .dark .app-shell a.text-slate-900, .dark .app-shell .bg-white.text-slate-900 { color: #f1f5f9; }
+
+  /* Menu: slightly deeper sidebar so it doesn't glow too much at night; phone bar on the dark surface */
+  .dark .app-shell aside { background-image: linear-gradient(to bottom, #134e40, #115e59, #0c4a6e); }
+  .dark .app-shell nav.fixed { background-color: #111a2b; }
+
+  /* Charts (Recharts draws with inline colours) */
+  .dark .app-shell .recharts-cartesian-grid line { stroke: #273449; }
+  .dark .app-shell .recharts-text, .dark .app-shell svg text[fill="#334155"] { fill: #cbd5e1; }
+  .dark .app-shell .recharts-default-tooltip { background-color: #151f32 !important; border-color: #334155 !important; color: #e2e8f0; }
+  .dark .app-shell .recharts-dot { stroke: #151f32; }
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 const ITEMS = [
   { href: "/", color: "emerald", label: "Home", icon: "M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z" },
@@ -67,6 +68,7 @@ export function Nav({ userName, inboxCount }: { userName: string; inboxCount: nu
             </Link>
           ))}
         </nav>
+        <ThemeToggle className="mt-auto flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/90 hover:bg-white/10" />
       </aside>
       {/* Phone bottom bar */}
       <nav className="fixed inset-x-0 bottom-0 z-20 flex print:hidden border-t-4 border-transparent bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(15,23,42,0.06)] [border-image:linear-gradient(90deg,#10b981,#0ea5e9,#8b5cf6,#f43f5e,#f59e0b)_1] md:hidden">
