@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { can } from "@/lib/roles";
 import { ROLE_LABELS, isRole } from "@/lib/roles";
 import { PageHeader } from "@/components/ui";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -30,7 +31,7 @@ export default async function SettingsPage() {
   }
   return (
     <>
-      <PageHeader title="More" subtitle={`${user.name} · ${isRole(user.role) ? ROLE_LABELS[user.role] : user.role} · 2FA ${user.totpEnabled ? "on" : "off"}`} />
+      <PageHeader title="More" subtitle={`${user.name} · ${isRole(user.role) ? ROLE_LABELS[user.role] : user.role} · 2FA ${user.totpEnabled ? "on" : "off"}`} action={<ThemeToggle className="btn-secondary" />} />
       <div className="grid gap-3 sm:grid-cols-2">
         {sections.filter((s) => s.show).map((s) => (
           <Link key={s.href} href={s.href} className="card hover:border-brand-500">
