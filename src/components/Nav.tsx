@@ -7,6 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const ITEMS = [
   { href: "/", color: "emerald", label: "Home", icon: "M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z" },
   { href: "/inbox", color: "sky", label: "Inbox", icon: "M4 4h16v12H5.2L4 17.2zM4 13h4l2 3h4l2-3h4", phone: true },
+  { href: "/consults", color: "teal", label: "Konsulta", icon: "M9 3v4a3 3 0 006 0V3M12 10v4a5 5 0 0010 0v-1M22 11a2 2 0 11-4 0 2 2 0 014 0z" },
   { href: "/leads", color: "violet", label: "Leads", icon: "M17 20h5v-2a4 4 0 00-5-3.9M9 20H2v-2a4 4 0 014-4h3a4 4 0 014 4v2zm3-12a4 4 0 11-8 0 4 4 0 018 0zm6 2a3 3 0 11-6 0 3 3 0 016 0z" },
   { href: "/patients", color: "rose", label: "Patients", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM19 3v4m-2-2h4" },
   { href: "/calendar", color: "amber", label: "Calendar", icon: "M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" },
@@ -37,10 +38,11 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-export function Nav({ userName, inboxCount }: { userName: string; inboxCount: number | null }) {
+export function Nav({ userName, inboxCount, consultCount = null }: { userName: string; inboxCount: number | null; consultCount?: number | null }) {
   const path = usePathname();
   // inboxCount null = no access to Messenger conversations (front desk).
-  const items = ITEMS.filter((i) => i.href !== "/inbox" || inboxCount !== null);
+  // consultCount null = no access to online konsulta (front desk).
+  const items = ITEMS.filter((i) => (i.href !== "/inbox" || inboxCount !== null) && (i.href !== "/consults" || consultCount !== null));
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
     <>
@@ -65,6 +67,7 @@ export function Nav({ userName, inboxCount }: { userName: string; inboxCount: nu
               <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-white ${TONES[item.color].tile}`}><Icon d={item.icon} /></span>
               {item.label}
               {item.href === "/inbox" && (inboxCount ?? 0) > 0 && <span className="badge ml-auto bg-amber-400 text-white">{inboxCount}</span>}
+              {item.href === "/consults" && (consultCount ?? 0) > 0 && <span className="badge ml-auto bg-amber-400 text-white">{consultCount}</span>}
             </Link>
           ))}
         </nav>
@@ -84,6 +87,9 @@ export function Nav({ userName, inboxCount }: { userName: string; inboxCount: nu
             {item.label}
             {item.href === "/inbox" && (inboxCount ?? 0) > 0 && (
               <span className="absolute right-1/4 top-1 rounded-full bg-amber-500 px-1.5 text-[10px] text-white">{inboxCount}</span>
+            )}
+            {item.href === "/consults" && (consultCount ?? 0) > 0 && (
+              <span className="absolute right-1/4 top-1 rounded-full bg-amber-500 px-1.5 text-[10px] text-white">{consultCount}</span>
             )}
           </Link>
         ))}

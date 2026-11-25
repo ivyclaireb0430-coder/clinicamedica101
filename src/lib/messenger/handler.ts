@@ -8,7 +8,17 @@ import { notifyDoctor } from "../notify";
 import { fetchProfile, sendText, type OutMessage } from "./meta";
 import { decideAiReply, generateAiDecision } from "./ai";
 import { aiApiKey, aiEnabled, loadClinicFacts, loadHistory, loadStyleExamples, takeAiQuota } from "./ai-context";
-import { bookingUrl } from "./booking-link";
+import { bookingToken, bookingUrl } from "./booking-link";
+
+/** "Online konsulta" in the menu when it is open, with a signed link that ties the konsulta to this chat's lead. */
+async function konsultaLink(conversationId: string): Promise<{ consultUrl?: string; doctorName?: string }> {
+  const base = process.env.APP_URL?.replace(/\/$/, "");
+  const token = bookingToken(conversationId);
+  // Imported here: the konsulta store imports the outreach code, which imports this file.
+  const { consultDoctorName, consultOpen } = await import("../consult/store");
+  if (!base || !token || !(await consultOpen().catch(() => false))) return {};
+  return { consultUrl: `${base}/konsulta?m=${encodeURIComponent(token)}`, doctorName: await consultDoctorName() };
+}
 import { handleMessage, parseState, type BotDeps, type FlowState, type Slot } from "./bot";
 
 const SLOTS_PER_PAGE = 6;
@@ -186,6 +196,7 @@ export async function handleEvent(event: MessagingEvent, opts: { observeOnly?: b
       consultationTypes: types.map((t) => ({ id: t.id, name: t.name, feeLabel: formatPhp(t.feePhp) })),
       privacyUrl: `${process.env.APP_URL ?? ""}/privacy`,
       bookingUrl: bookingUrl(conversation.id),
+      ...(await konsultaLink(conversation.id)),
     },
     state,
     { text, payload },

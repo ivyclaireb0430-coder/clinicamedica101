@@ -40,6 +40,11 @@ export async function exportPerson(target: { leadId?: string; patientId?: string
       ])
     : [[], [], [], [], [], [], [], [], [], []];
 
+  const consultWhere = [...(leadId ? [{ leadId }] : []), ...(pid ? [{ patientId: pid }] : [])];
+  const consults = consultWhere.length
+    ? await db.consultSession.findMany({ where: { OR: consultWhere }, include: { messages: { orderBy: { createdAt: "asc" } }, files: true }, orderBy: { createdAt: "asc" } })
+    : [];
+
   const intakeForms = [...new Map([...(lead?.intakeForms ?? []), ...intake].map((f) => [f.id, f])).values()];
   return {
     exportedAt: new Date().toISOString(),
@@ -75,6 +80,14 @@ export async function exportPerson(target: { leadId?: string; patientId?: string
     payments: payments.map((p) => ({ date: p.date, receiptNo: p.receiptNo, orNumber: p.orNumber, method: p.method, amountPhp: p.amountPhp, voided: Boolean(p.voidedAt) })),
     packages: packages.map((p) => ({ name: p.name, sessionsTotal: p.sessionsTotal, sessionsUsed: p.uses.length, pricePhp: p.pricePhp })),
     files: attachments.map((a) => ({ name: decryptOptional(a.filenameEnc), type: a.mimeType, uploadedAt: a.createdAt, note: "Ask the clinic for a copy of this file." })),
+    onlineKonsulta: consults.map((c) => ({
+      startedAt: c.createdAt, status: c.status, consentVersion: c.consentVersion, consentAt: c.consentAt,
+      messages: c.messages.map((m) => ({ at: m.createdAt, from: m.sender === "PATIENT" ? "you" : m.sender === "AI" ? "AI assistant" : m.sender === "DOCTOR" ? "doctor" : "notice", text: decryptOptional(m.textEnc) })),
+      aiSummaryForDoctor: decryptJson(c.summaryEnc),
+      doctorReply: decryptOptional(c.doctorNoteEnc),
+      prescription: decryptJson(c.prescriptionEnc),
+      files: c.files.map((f) => ({ name: decryptOptional(f.filenameEnc), type: f.mimeType, uploadedAt: f.createdAt })),
+    })),
   };
 }
 
@@ -89,6 +102,14 @@ export async function erasePerson(target: { leadId?: string; patientId?: string 
     : target.leadId ? await db.patient.findUnique({ where: { leadId: target.leadId } }) : null;
   const leadId = target.leadId ?? patient?.leadId ?? null;
   const ref = patient?.patientNo ?? leadId?.slice(-6) ?? "unknown";
+
+  // Online konsulta chats, summaries, e-reseta and files.
+  const consultWhere = [...(leadId ? [{ leadId }] : []), ...(patient ? [{ patientId: patient.id }] : [])];
+  if (consultWhere.length) {
+    const consultFiles = await db.consultFile.findMany({ where: { session: { OR: consultWhere } }, select: { storageKey: true } });
+    await db.consultSession.deleteMany({ where: { OR: consultWhere } }); // messages and files cascade
+    for (const f of consultFiles) await deleteEncryptedFile(f.storageKey).catch(() => undefined);
+  }
 
   if (patient) {
     const pid = patient.id;

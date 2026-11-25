@@ -19,6 +19,29 @@ Mobile-first web app. One doctor/owner today, with roles ready for staff (Owner,
 | 7 | Sales funnel: public landing page (`/start`) with inquiry form into Leads, ad tracking links, page visits in the dashboard funnel | **In review** |
 | 8 | Public clinic website (`/clinic` English, `/clinic/tl` Taglish): services, approach, doctor, fees, location, links to booking | **In review** |
 
+## Online konsulta (AI assistant of the doctor)
+
+`/konsulta` is a public, phone-first page where patients consult the doctor's AI assistant. Off until the owner turns it
+on under More → Online konsulta settings (with the doctor's consent confirmed). Uses the same Anthropic key as the Messenger AI.
+
+- Before the chat the patient consents (Data Privacy Act, AI processing by Anthropic, not for emergencies) and is told
+  plainly that the assistant is an AI, not the doctor. Each konsulta is linked to a lead (or the Messenger lead it came from).
+- The AI takes the history in the doctor's style. Code-level filters throw away any patient-facing reply that names a
+  medicine, gives a dose, guesses a diagnosis, promises results or contains a link (`src/lib/consult/ai.ts`).
+- Emergencies (regex, or the model's own flag) stop the AI: the patient sees ER / 911 / NCMH 1553 instructions and the
+  doctor gets an email right away.
+- "Ipadala kay Doc" creates an AI summary and suggested plan for the doctor only (**Konsulta → Para kay Doc**). The doctor
+  edits the AI's draft reply, adds an e-reseta (generic names, PRC license and PTR from settings; dangerous drugs refused),
+  and approves. Only then does the patient get a text/email/Messenger link to read it. The doctor can also ask the patient
+  a follow-up question or close the konsulta without a reply.
+- The patient's link only opens in the browser that started it, or after typing the same mobile number.
+- **Turuan si Doc AI** (`/consults/train`): chat to teach the AI the doctor's style, questions and general advice; lessons
+  are saved only on "Tandaan" and never include medicines or doses. After sending an edited reply the doctor can teach
+  the AI from the difference between its draft and her final message.
+- Messenger: when the konsulta is open, the menu gets "Online konsulta" and health questions get a button to it.
+- Chats, summaries, replies, e-reseta and uploads are encrypted, audit-logged, and included in privacy export and erasure.
+  Daily AI cap in settings. SOP: [docs/sops/09-online-konsulta.md](docs/sops/09-online-konsulta.md).
+
 ## Run it locally
 
 Requires Node.js 20+ and Docker (for the local PostgreSQL database).

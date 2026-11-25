@@ -32,6 +32,8 @@ export const authConfig = {
         pathname.startsWith("/intake/") ||
         pathname.startsWith("/book/") ||
         pathname.startsWith("/feedback/") ||
+        pathname === "/konsulta" ||
+        pathname.startsWith("/konsulta/") ||
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/api/cron") ||
         pathname === "/api/health" ||

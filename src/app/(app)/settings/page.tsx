@@ -16,6 +16,8 @@ export default async function SettingsPage() {
     { href: "/settings/audit", title: "Audit log", desc: "Who viewed or changed patient records", show: can(user.role, "audit:read") },
     { href: "/settings/followup", title: "Follow-up & billing settings", desc: "Recall timing, feedback requests, receipt header", show: can(user.role, "settings:manage") },
     { href: "/settings/schedule", title: "Schedule, fees & closed dates", desc: "Clinic hours, consultation types, blocked dates", show: can(user.role, "booking:write") },
+    { href: "/consults", title: "Online konsulta", desc: "AI assistant ni Doc: Para kay Doc, e-reseta", show: can(user.role, "consult:review") },
+    { href: "/settings/konsulta", title: "Online konsulta settings", desc: "Buksan sa pasyente, PRC license, PTR, Turuan si Doc AI", show: can(user.role, "settings:manage") },
     { href: "/settings/messenger", title: "Messenger & reminders", desc: "Auto-replies, AI, reminders, takeover", show: can(user.role, "settings:manage") },
     { href: "/scripts", title: "Saved scripts", desc: "Taglish replies used by the bot and inbox", show: true },
     { href: "/settings/website", title: "Website", desc: "Public clinic website: services, intro, contact", show: can(user.role, "settings:manage") },

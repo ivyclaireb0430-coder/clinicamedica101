@@ -34,6 +34,9 @@ export type BotContext = {
   privacyUrl: string;
   /** Booking form with a calendar (name, mobile, email, date). When set, "Mag-book" sends this link. */
   bookingUrl?: string | null;
+  /** Online konsulta with the doctor's AI assistant. When set, the menu offers it. */
+  consultUrl?: string | null;
+  doctorName?: string;
 };
 
 export type BotDeps = {
@@ -66,6 +69,25 @@ export const MENU: QuickReply[] = [
   { title: "Kausapin ang doktor", payload: "MENU_DOCTOR" },
 ];
 
+/** The menu, plus "Online konsulta" when it is open. */
+export function menu(ctx: Pick<BotContext, "consultUrl">): QuickReply[] {
+  return ctx.consultUrl ? [...MENU, { title: "Online konsulta", payload: "MENU_CONSULT" }] : MENU;
+}
+
+export function consultReply(ctx: BotContext): BotResult {
+  const doctor = ctx.doctorName || "ang doktor";
+  return {
+    replies: [
+      {
+        text: `Puwede po kayong mag-online konsulta: AI assistant po ni ${doctor} ang magtatanong tungkol sa inyong nararamdaman, at si ${doctor} mismo ang magre-review at magbibigay ng reseta kung kailangan. Pindutin lang po ang button sa ibaba. 🩺`,
+        button: { title: "🩺 Online konsulta", url: ctx.consultUrl! },
+        quickReplies: BACK_TO_MENU,
+      },
+    ],
+    state: IDLE,
+  };
+}
+
 const IDLE: FlowState = { step: "IDLE" };
 
 const INTENTS: [RegExp, string][] = [
@@ -75,6 +97,7 @@ const INTENTS: [RegExp, string][] = [
   [/\b(mag-?book|book|booking|appointment|appt|magpa-?schedule|pa-?book|pa-?sched)\b/i, "MENU_BOOK"],
   [/\b(schedule|sched|available|bakante|open|clinic hours|oras)\b/i, "MENU_SCHED"],
   [/\b(paano|how does|process|proseso|ano ang mangyayari)\b/i, "MENU_HOW"],
+  [/\b(online (konsulta|consult\w*)|teleconsult\w*|konsulta online)\b/i, "MENU_CONSULT"],
   [/\b(doktor|doctor|doc|dra?\.?)\b/i, "MENU_DOCTOR"],
   [/^(hi|hello|hey|good (morning|afternoon|evening)|magandang (umaga|hapon|gabi)|kumusta|musta|start|get started)\b/i, "GREETING"],
 ];
@@ -160,7 +183,7 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
   const payload = input.payload ?? "";
 
   if (payload === "CANCEL_FLOW" || payload === "MENU") {
-    return { replies: [{ text: "Sige po. Ano pa po ang maitutulong namin?", quickReplies: MENU }], state: IDLE };
+    return { replies: [{ text: "Sige po. Ano pa po ang maitutulong namin?", quickReplies: menu(ctx) }], state: IDLE };
   }
 
   // Booking flow steps take precedence over free text.
@@ -202,25 +225,25 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
     // First contact: greet, privacy notice, menu. Free text is also flagged for the doctor if it isn't a simple greeting.
     if (text && !intent) await deps.handoff();
     await deps.setStage("REPLIED");
-    return { replies: [{ text: script(ctx, "first_reply"), quickReplies: MENU }], state: IDLE };
+    return { replies: [{ text: script(ctx, "first_reply"), quickReplies: menu(ctx) }], state: IDLE };
   }
 
   switch (intent) {
     case "GREETING":
       await deps.setStage("REPLIED");
-      return { replies: [{ text: `Hi ${ctx.firstName}! Ano po ang maitutulong namin?`, quickReplies: MENU }], state: IDLE };
+      return { replies: [{ text: `Hi ${ctx.firstName}! Ano po ang maitutulong namin?`, quickReplies: menu(ctx) }], state: IDLE };
     case "MENU_HOW":
       await deps.setStage("REPLIED");
       return {
-        replies: [{ text: script(ctx, "approach") }, { text: script(ctx, "first_consult"), quickReplies: MENU }],
+        replies: [{ text: script(ctx, "approach") }, { text: script(ctx, "first_consult"), quickReplies: menu(ctx) }],
         state: IDLE,
       };
     case "MENU_FEE":
       await deps.setStage("FEE_EXPLAINED");
-      return { replies: [{ text: script(ctx, "fee"), quickReplies: MENU }], state: IDLE };
+      return { replies: [{ text: script(ctx, "fee"), quickReplies: menu(ctx) }], state: IDLE };
     case "MENU_LOCATION":
       await deps.setStage("REPLIED");
-      return { replies: [{ text: script(ctx, "location"), quickReplies: MENU }], state: IDLE };
+      return { replies: [{ text: script(ctx, "location"), quickReplies: menu(ctx) }], state: IDLE };
     case "MENU_SCHED":
     case "MENU_BOOK":
       await deps.setStage(intent === "MENU_SCHED" ? "FEE_EXPLAINED" : "REPLIED");
@@ -230,6 +253,10 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
     case "CONSENT_YES":
     case "CONSENT_NO":
       return continueFlow(ctx, { step: "CONSENT" }, input, deps) as Promise<BotResult>;
+    case "MENU_CONSULT":
+      if (ctx.consultUrl) return consultReply(ctx);
+      await deps.handoff();
+      return { replies: [{ text: script(ctx, "doctor_handoff"), quickReplies: menu(ctx) }], state: IDLE };
     case "MENU_DOCTOR":
       await deps.handoff();
       return {
@@ -240,7 +267,10 @@ export async function handleMessage(ctx: BotContext, state: FlowState, input: In
       // Unknown free text: could be a symptom or complaint. Never answer medically; hand off to the doctor.
       await deps.handoff();
       if (ctx.recentlyHandedOff) return { replies: [], state: IDLE };
-      return { replies: [{ text: script(ctx, "doctor_handoff"), quickReplies: MENU }], state: IDLE };
+      if (ctx.consultUrl) {
+        return { replies: [{ text: script(ctx, "doctor_handoff") }, ...consultReply(ctx).replies], state: IDLE };
+      }
+      return { replies: [{ text: script(ctx, "doctor_handoff"), quickReplies: menu(ctx) }], state: IDLE };
   }
 }
 
@@ -251,10 +281,10 @@ async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): P
     await deps.handoff();
     if (ctx.isNewConversation && !decision.reply) {
       await deps.setStage("REPLIED");
-      return { replies: [{ text: script(ctx, "first_reply"), quickReplies: MENU }], state: IDLE };
+      return { replies: [{ text: script(ctx, "first_reply"), quickReplies: menu(ctx) }], state: IDLE };
     }
     if (ctx.recentlyHandedOff) return { replies: [], state: IDLE };
-    return { replies: [{ text: decision.reply || script(ctx, "doctor_handoff"), quickReplies: MENU, byAi: Boolean(decision.reply) }], state: IDLE };
+    return { replies: [{ text: decision.reply || script(ctx, "doctor_handoff"), quickReplies: menu(ctx), byAi: Boolean(decision.reply) }], state: IDLE };
   }
   if (decision.action === "book") {
     await deps.setStage("REPLIED");
@@ -262,7 +292,7 @@ async function aiResult(ctx: BotContext, decision: AiDecision, deps: BotDeps): P
     return { replies: [{ text: decision.reply, byAi: true }, ...booking.replies], state: booking.state };
   }
   await deps.setStage(/₱|\bphp\b|pesos?\b/i.test(decision.reply) ? "FEE_EXPLAINED" : "REPLIED");
-  return { replies: [{ text: decision.reply, quickReplies: MENU, byAi: true }], state: IDLE };
+  return { replies: [{ text: decision.reply, quickReplies: menu(ctx), byAi: true }], state: IDLE };
 }
 
 export const BOOKING_LINK_TEXT =
@@ -298,7 +328,7 @@ async function askSlot(ctx: BotContext, deps: BotDeps, typeId: string, page: num
   if (slots.length === 0) {
     await deps.handoff();
     return {
-      replies: [{ text: "Pasensya na po, wala pong bakanteng oras sa mga susunod na araw. Ipapaalam ko po sa doktor para matulungan kayo.", quickReplies: MENU }],
+      replies: [{ text: "Pasensya na po, wala pong bakanteng oras sa mga susunod na araw. Ipapaalam ko po sa doktor para matulungan kayo.", quickReplies: menu(ctx) }],
       state: IDLE,
     };
   }
@@ -345,7 +375,7 @@ async function continueFlow(ctx: BotContext, state: FlowState, input: Incoming, 
       }
       if (payload === "CONSENT_NO") {
         return {
-          replies: [{ text: "Okay lang po. Kung may tanong pa kayo, nandito lang po kami.", quickReplies: MENU }],
+          replies: [{ text: "Okay lang po. Kung may tanong pa kayo, nandito lang po kami.", quickReplies: menu(ctx) }],
           state: IDLE,
         };
       }
