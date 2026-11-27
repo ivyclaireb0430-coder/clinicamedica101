@@ -33,6 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="absolute inset-x-0 top-0 flex h-1.5" aria-hidden="true">
           <span className="flex-1 bg-emerald-500" /><span className="flex-1 bg-sky-500" /><span className="flex-1 bg-violet-500" /><span className="flex-1 bg-rose-500" /><span className="flex-1 bg-amber-400" />
         </div>
+        <img src="/brand/logo.png" alt="Clinica Medica 101 logo" width={88} height={88} className="mx-auto h-[88px] w-[88px]" />
         <div>
           <h1>Clinica Medica 101</h1>
           <p className="muted">Sign in to the clinic system</p>
