@@ -95,14 +95,42 @@ export async function createUser(formData: FormData) {
   // One-time temporary password shown to the owner once.
   const tempPassword = randomBytes(9).toString("base64url");
   const user = await db.user.create({
-    data: { ...data, passwordHash: await bcrypt.hash(tempPassword, 12) },
+    data: { ...data, passwordHash: await bcrypt.hash(tempPassword, 12), mustChangePassword: true },
   });
   await audit({ userId: owner.id, action: "CREATE", entity: "User", entityId: user.id, detail: `role=${data.role}` });
-  // Shown once via a short-lived cookie so the password never appears in URLs or logs.
-  (await cookies()).set("flash_temp", JSON.stringify({ email: data.email, temp: tempPassword }), {
+  await flashTempPassword(data.email, tempPassword, "created");
+  redirect("/settings/users");
+}
+
+/** Shown once via a short-lived cookie so the password never appears in URLs or logs. */
+async function flashTempPassword(email: string, temp: string, kind: "created" | "reset") {
+  (await cookies()).set("flash_temp", JSON.stringify({ email, temp, kind }), {
     httpOnly: true, secure: true, sameSite: "strict", maxAge: 60, path: "/settings/users",
   });
+}
+
+/** Owner resets a staff member's forgotten password: new temporary password, must be changed on next login. */
+export async function resetUserPassword(id: string) {
+  const owner = await requirePermission("users:manage");
+  if (id === owner.id) redirect("/settings/users"); // use "Change my password", or the server script if locked out
+  const user = await db.user.findUniqueOrThrow({ where: { id } });
+  const tempPassword = randomBytes(9).toString("base64url");
+  await db.user.update({
+    where: { id },
+    data: { passwordHash: await bcrypt.hash(tempPassword, 12), mustChangePassword: true, failedLogins: 0, lockedUntil: null },
+  });
+  await audit({ userId: owner.id, action: "UPDATE", entity: "User", entityId: id, detail: "password reset by owner" });
+  await flashTempPassword(user.email, tempPassword, "reset");
   redirect("/settings/users");
+}
+
+/** Owner turns off a staff member's 2FA (lost phone). They set it up again on next login if required. */
+export async function resetUser2fa(id: string) {
+  const owner = await requirePermission("users:manage");
+  if (id === owner.id) return;
+  await db.user.update({ where: { id }, data: { totpEnabled: false, totpSecretEnc: null, failedLogins: 0, lockedUntil: null } });
+  await audit({ userId: owner.id, action: "UPDATE", entity: "User", entityId: id, detail: "2FA reset by owner" });
+  redirect("/settings/users?twofa=reset");
 }
 
 export async function toggleUserActive(id: string) {
@@ -120,7 +148,8 @@ export async function changePassword(formData: FormData) {
     .object({ current: z.string().min(1), next: z.string().min(12, "At least 12 characters") })
     .parse(Object.fromEntries(formData));
   if (!(await bcrypt.compare(current, user.passwordHash))) redirect("/settings/users?pw=wrong");
-  await db.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(next, 12) } });
+  if (await bcrypt.compare(next, user.passwordHash)) redirect("/settings/users?pw=same");
+  await db.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(next, 12), mustChangePassword: false } });
   await audit({ userId: user.id, action: "UPDATE", entity: "User", entityId: user.id, detail: "password changed" });
   redirect("/settings/users?pw=ok");
 }

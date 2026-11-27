@@ -17,6 +17,9 @@ Mga hakbang para sa araw-araw na trabaho. Isang SOP bawat bahagi ng proseso ng p
 **Mga patakaran para sa lahat:**
 
 - Gumamit ng sariling account. Huwag mag-share ng login.
+- Nakalimutan ang password? Pindutin ang **Nakalimutan ang password?** sa login page at sundan ang link sa email.
+  Kung walang dumating, sabihan ang Owner: ire-reset niya sa **More → Users & roles → Reset password**. Huwag ipadala
+  ang temporary password sa chat. (Owner: tingnan ang DEPLOY.md, "Nakalimutan ang password".)
 - Dapat may screen lock ang phone o laptop na ginagamit sa system.
 - Huwag mag-screenshot ng health notes o lab results para i-send sa chat. Nasa system na ang lahat.
 - Ang mga "Saved scripts" (**More → Saved scripts**) ang gamitin sa pagsagot para pare-pareho ang tono.

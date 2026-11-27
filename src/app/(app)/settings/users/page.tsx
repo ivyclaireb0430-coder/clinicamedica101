@@ -4,13 +4,13 @@ import { requireUser } from "@/lib/session";
 import { can, ROLES, ROLE_LABELS, isRole } from "@/lib/roles";
 import { formatDate } from "@/lib/time";
 import { BackLink, PageHeader } from "@/components/ui";
-import { changePassword, createUser, toggleUserActive } from "../actions";
+import { changePassword, createUser, resetUser2fa, resetUserPassword, toggleUserActive } from "../actions";
 
-export default async function UsersPage({ searchParams }: { searchParams: Promise<{ pw?: string }> }) {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ pw?: string; twofa?: string }> }) {
   const me = await requireUser();
   const sp = await searchParams;
   const manage = can(me.role, "users:manage");
-  let flash: { email: string; temp: string } | null = null;
+  let flash: { email: string; temp: string; kind?: "created" | "reset" } | null = null;
   try {
     flash = JSON.parse((await cookies()).get("flash_temp")?.value ?? "null");
   } catch {}
@@ -22,12 +22,15 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
       <PageHeader title="Users & roles" subtitle="Front desk can manage inquiries and bookings but never sees health information." />
       {manage && flash && (
         <div className="card mb-4 border-amber-300 bg-amber-50 text-sm">
-          Account created for <b>{flash.email}</b>. Temporary password: <code className="font-mono">{flash.temp}</code>
-          <br />Ibigay ito nang personal (hindi sa chat) at ipapalit agad pagka-login. Hindi na ito ipapakita ulit.
+          {flash.kind === "reset" ? "Password reset for" : "Account created for"} <b>{flash.email}</b>. Temporary password:{" "}
+          <code className="font-mono">{flash.temp}</code>
+          <br />Ibigay ito nang personal (hindi sa chat). Pagka-login, papipiliin siya ng bagong password. Hindi na ito ipapakita ulit.
         </div>
       )}
       {sp.pw === "ok" && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Password changed.</p>}
       {sp.pw === "wrong" && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Mali ang current password.</p>}
+      {sp.pw === "same" && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">Pumili ng ibang password kaysa sa dati.</p>}
+      {sp.twofa === "reset" && <p className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Naka-off na ang 2FA niya. Ipa-set up ulit pagka-login.</p>}
 
       <div className="grid gap-4 md:grid-cols-2">
         {manage && (
@@ -42,9 +45,19 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                     {!u.active && <span className="badge ml-2">Inactive</span>}
                   </span>
                   {u.id !== me.id && (
-                    <form action={toggleUserActive.bind(null, u.id)}>
-                      <button className="btn-secondary py-1 text-xs">{u.active ? "Deactivate" : "Reactivate"}</button>
-                    </form>
+                    <span className="flex flex-wrap gap-2">
+                      <form action={resetUserPassword.bind(null, u.id)}>
+                        <button className="btn-secondary py-1 text-xs">Reset password</button>
+                      </form>
+                      {u.totpEnabled && (
+                        <form action={resetUser2fa.bind(null, u.id)}>
+                          <button className="btn-secondary py-1 text-xs">Reset 2FA</button>
+                        </form>
+                      )}
+                      <form action={toggleUserActive.bind(null, u.id)}>
+                        <button className="btn-secondary py-1 text-xs">{u.active ? "Deactivate" : "Reactivate"}</button>
+                      </form>
+                    </span>
                   )}
                 </li>
               ))}
@@ -68,6 +81,10 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
             <input name="next" type="password" className="input" placeholder="New password (12+ characters)" minLength={12} autoComplete="new-password" required />
             <button className="btn-secondary">Change password</button>
           </form>
+          <p className="muted text-xs">
+            Nakalimot ng password? Gamitin ang <b>Nakalimutan ang password?</b> sa login page (link sa email). Kung walang
+            dumating na email, ang Owner ang pipindot ng <b>Reset password</b> sa tabi ng pangalan ng staff.
+          </p>
         </section>
       </div>
     </>

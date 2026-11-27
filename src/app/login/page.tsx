@@ -25,19 +25,21 @@ async function login(formData: FormData) {
   }
 }
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; enabled?: string }> }) {
-  const { error, enabled } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; enabled?: string; reset?: string }> }) {
+  const { error, enabled, reset } = await searchParams;
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <form action={login} className="card relative w-full max-w-sm space-y-4 overflow-hidden pt-6">
         <div className="absolute inset-x-0 top-0 flex h-1.5" aria-hidden="true">
           <span className="flex-1 bg-emerald-500" /><span className="flex-1 bg-sky-500" /><span className="flex-1 bg-violet-500" /><span className="flex-1 bg-rose-500" /><span className="flex-1 bg-amber-400" />
         </div>
+        <img src="/brand/logo.png" alt="Clinica Medica 101 logo" width={88} height={88} className="mx-auto h-[88px] w-[88px]" />
         <div>
           <h1>Clinica Medica 101</h1>
           <p className="muted">Sign in to the clinic system</p>
         </div>
         {enabled && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Naka-on na ang 2FA. Mag-login ulit gamit ang code.</p>}
+        {reset && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Napalitan na ang password. Mag-login gamit ang bago.</p>}
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{MESSAGES[error] ?? MESSAGES.invalid}</p>}
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -52,6 +54,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <input className="input" id="code" name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="6 digits (if 2FA is on)" />
         </div>
         <button className="btn w-full" type="submit">Sign in</button>
+        <a href="/login/forgot" className="block text-center text-sm underline">Nakalimutan ang password?</a>
       </form>
     </main>
   );

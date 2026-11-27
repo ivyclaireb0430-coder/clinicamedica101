@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  // A temporary password (new account or reset) must be replaced first.
+  if (user.mustChangePassword) redirect("/change-password");
   // Owners must turn on 2FA before using the system.
   if (user.role === "OWNER" && !user.totpEnabled) redirect("/setup-2fa");
   return (
@@ -13,6 +15,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Nav userName={user.name} inboxCount={can(user.role, "lead_concern:read") ? await db.conversation.count({ where: { needsDoctor: true } }) : null}
         consultCount={can(user.role, "consult:review") ? await db.consultSession.count({ where: { OR: [{ status: "SUBMITTED" }, { status: "EMERGENCY", closedAt: null }] } }) : null}
       />
+      {/* Phone top bar with the clinic logo (desktop shows it in the sidebar). */}
+      <header className="flex items-center gap-2 px-4 pt-3 md:hidden print:hidden">
+        <img src="/brand/logo.png" alt="" width={32} height={32} className="h-8 w-8" />
+        <span className="font-semibold">Clinica Medica 101</span>
+      </header>
       <main className="px-4 pb-24 pt-4 md:pb-8 md:pl-60 md:pr-8 md:pt-8 print:p-0">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
