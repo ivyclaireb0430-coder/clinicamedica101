@@ -47,8 +47,13 @@ export function Nav({ userName, inboxCount }: { userName: string; inboxCount: nu
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-56 print:!hidden flex-col bg-gradient-to-b from-brand-700 via-teal-700 to-sky-800 p-4 text-white shadow-lg md:flex">
         <div className="mb-6 px-2">
-          <div className="font-semibold">Clinica Medica 101</div>
-          <div className="truncate text-sm text-emerald-100">{userName}</div>
+          <div className="flex items-center gap-3">
+            <img src="/brand/logo.png" alt="Clinica Medica 101 logo" width={44} height={44} className="h-11 w-11 shrink-0 drop-shadow" />
+            <div className="min-w-0">
+              <div className="font-semibold leading-tight">Clinica Medica 101</div>
+              <div className="truncate text-sm text-emerald-100">{userName}</div>
+            </div>
+          </div>
           <div className="mt-3 flex h-1 overflow-hidden rounded-full" aria-hidden="true">
             <span className="flex-1 bg-emerald-300" /><span className="flex-1 bg-sky-300" /><span className="flex-1 bg-violet-300" /><span className="flex-1 bg-rose-300" /><span className="flex-1 bg-amber-300" />
           </div>
