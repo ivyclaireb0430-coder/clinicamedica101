@@ -19,9 +19,9 @@ const rxSchema = z.array(
   }),
 ).max(12);
 
-const replySchema = z.object({ note: z.string().trim().min(1, "Isulat ang mensahe ninyo sa pasyente.").max(6000), rx: rxSchema });
+const replySchema = z.object({ note: z.string().trim().min(1, "Isulat ang mensahe ninyo sa pasyente.").max(6000), rx: rxSchema, needsVisit: z.boolean().default(false) });
 
-export async function approveConsult(id: string, input: { note: string; rx: unknown }): Promise<{ error?: string; channel?: string }> {
+export async function approveConsult(id: string, input: { note: string; rx: unknown; needsVisit?: boolean }): Promise<{ error?: string; channel?: string }> {
   const user = await requirePermission("consult:review");
   const parsed = replySchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message || "Paki-check ang reseta: kailangan ang gamot at Sig." };
@@ -36,11 +36,12 @@ export async function approveConsult(id: string, input: { note: string; rx: unkn
       sentAt: new Date(),
       reviewedById: user.id,
       doctorNoteEnc: encrypt(parsed.data.note),
+      needsVisit: parsed.data.needsVisit,
       prescriptionEnc: parsed.data.rx.length ? encryptJson(parsed.data.rx) : null,
       closedAt: session.status === "EMERGENCY" ? new Date() : null,
     },
   });
-  await audit({ userId: user.id, action: "APPROVE", entity: "ConsultSession", entityId: id, detail: `doctor reply sent${parsed.data.rx.length ? ` with e-reseta (${parsed.data.rx.length} item)` : ""}` });
+  await audit({ userId: user.id, action: "APPROVE", entity: "ConsultSession", entityId: id, detail: `doctor reply sent${parsed.data.needsVisit ? ", in-clinic visit needed" : ""}${parsed.data.rx.length ? ` with e-reseta (${parsed.data.rx.length} item)` : ""}` });
   const sent = await notifyPatientConsult(id).catch((e: Error) => ({ ok: false, channel: "FAILED", error: e.message }));
   revalidatePath("/consults");
   revalidatePath(`/consults/${id}`);

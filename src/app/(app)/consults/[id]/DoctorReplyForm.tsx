@@ -7,10 +7,11 @@ import { approveConsult } from "../actions";
 type Rx = { drug: string; form: string; sig: string; qty: string };
 const EMPTY: Rx = { drug: "", form: "", sig: "", qty: "" };
 
-export function DoctorReplyForm({ id, draft }: { id: string; draft: string }) {
+export function DoctorReplyForm({ id, draft, suggestVisit = false }: { id: string; draft: string; suggestVisit?: boolean }) {
   const router = useRouter();
   const [note, setNote] = useState(draft);
   const [rx, setRx] = useState<Rx[]>([]);
+  const [needsVisit, setNeedsVisit] = useState(suggestVisit);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -22,7 +23,7 @@ export function DoctorReplyForm({ id, draft }: { id: string; draft: string }) {
   function approve() {
     setError(null);
     start(async () => {
-      const r = await approveConsult(id, { note, rx: filled });
+      const r = await approveConsult(id, { note, rx: filled, needsVisit });
       if (r.error) {
         setConfirm(false);
         return setError(r.error);
@@ -60,12 +61,20 @@ export function DoctorReplyForm({ id, draft }: { id: string; draft: string }) {
         <p className="text-xs text-slate-500">Ilalagay ang inyong pangalan, PRC license at PTR (Settings → Online konsulta). Hindi puwede ang dangerous drugs (S2) dito.</p>
       </div>
 
+      <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+        <input type="checkbox" className="mt-1" checked={needsVisit} onChange={(e) => setNeedsVisit(e.target.checked)} />
+        <span>
+          <b>Papuntahin sa clinic</b> (kailangan ng physical examination). Makikita ng pasyente ang &quot;Kailangan po kayong makita ni Doc sa clinic&quot; at isang
+          <b> Mag-book</b> button.{suggestVisit && <span className="text-violet-700"> (AI suggestion: kailangan ng in-clinic visit)</span>}
+        </span>
+      </label>
+
       {error && <p className="rounded bg-red-50 p-2 text-red-700">{error}</p>}
       {!confirm ? (
         <button type="button" className="btn w-full" disabled={pending || !note.trim()} onClick={() => setConfirm(true)}>Approve &amp; ipadala</button>
       ) : (
         <div className="space-y-2 rounded-lg bg-amber-50 p-2">
-          <p>Ipapadala sa pasyente ang mensahe{filled.length ? ` at e-reseta (${filled.length} gamot)` : ""}. Sigurado po?</p>
+          <p>Ipapadala sa pasyente ang mensahe{filled.length ? ` at e-reseta (${filled.length} gamot)` : ""}{needsVisit ? ", at papupuntahin siya sa clinic" : ""}. Sigurado po?</p>
           <div className="flex gap-2">
             <button type="button" className="btn flex-1" disabled={pending} onClick={approve}>{pending ? "Ipinapadala…" : "Oo, ipadala"}</button>
             <button type="button" className="btn-secondary flex-1" disabled={pending} onClick={() => setConfirm(false)}>Hindi pa</button>

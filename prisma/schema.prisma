@@ -654,6 +654,7 @@ model ConsultSession {
   doctorNoteEnc   String? // encrypted: the doctor's message to the patient
   prescriptionEnc String? // encrypted JSON: the doctor's e-prescription lines
   draftNoteEnc    String? // encrypted: the AI's draft of the doctor's message, kept to learn from the doctor's edits
+  needsVisit      Boolean   @default(false) // doctor: needs a physical exam, patient is asked to book an in-clinic visit
   reviewedById    String?
   submittedAt     DateTime?
   emergencyAt     DateTime?

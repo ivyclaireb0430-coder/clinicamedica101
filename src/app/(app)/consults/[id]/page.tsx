@@ -144,12 +144,13 @@ export default async function ConsultDetailPage({ params }: { params: Promise<{ 
               <p className="muted">
                 Ito lang ang makikita ng pasyente, pagkatapos ninyong pindutin ang <b>Approve &amp; ipadala</b>. Ang AI summary sa kaliwa ay para sa inyo lang.
               </p>
-              <DoctorReplyForm id={s.id} draft={draft ?? ""} />
+              <DoctorReplyForm id={s.id} draft={draft ?? ""} suggestVisit={Boolean(summary?.recommendInPerson)} />
             </section>
           ) : s.status === "SENT" ? (
             <section className="card space-y-2 text-sm">
               <h2 className="font-semibold">Naipadala ({s.sentAt ? formatDateTime(s.sentAt) : ""})</h2>
               <p className="whitespace-pre-wrap">{sentNote}</p>
+              {s.needsVisit && <p className="rounded bg-amber-50 p-2 text-amber-900">🏥 Pinapupunta sa clinic para sa physical exam.</p>}
               {rx.length > 0 && (
                 <>
                   <ol className="list-decimal pl-5">{rx.map((r, i) => <li key={i}><b>{r.drug}</b> {r.form} {r.qty && `#${r.qty}`} · Sig: {r.sig}</li>)}</ol>

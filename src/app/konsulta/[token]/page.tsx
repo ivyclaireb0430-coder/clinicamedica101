@@ -90,6 +90,13 @@ export default async function KonsultaSessionPage({ params, searchParams }: { pa
             {session.sentAt && <p className="text-xs text-slate-500">{formatDateTime(session.sentAt)}</p>}
           </div>
           {note && <p className="whitespace-pre-wrap text-sm">{note}</p>}
+          {session.needsVisit && (
+            <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+              <p className="font-semibold">🏥 Kailangan po kayong makita ni {doctor} sa clinic</p>
+              <p>Para sa physical examination, hindi po ito matatapos online. Pumili po ng oras para sa inyong pagbisita.</p>
+              <Link href="/start/consultation" className="btn w-full">Mag-book sa clinic</Link>
+            </div>
+          )}
           {rx.length > 0 && (
             <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-3">
               <p className="mb-1 font-semibold">℞ e-Reseta</p>
