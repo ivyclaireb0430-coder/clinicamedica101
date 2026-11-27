@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  // A temporary password (new account or reset) must be replaced first.
+  if (user.mustChangePassword) redirect("/change-password");
   // Owners must turn on 2FA before using the system.
   if (user.role === "OWNER" && !user.totpEnabled) redirect("/setup-2fa");
   return (

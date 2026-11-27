@@ -24,12 +24,27 @@ model User {
   active         Boolean   @default(true)
   failedLogins   Int       @default(0)
   lockedUntil    DateTime?
+  mustChangePassword Boolean @default(false) // set by a temporary password (new account or reset)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   auditLogs      AuditLog[]
   stageChanges   LeadStageChange[]
   googleAccount  GoogleAccount?
+  passwordResets PasswordResetToken[]
+}
+
+/// "Forgot password?" email links. Only a SHA-256 hash of the token is stored; single use, short-lived.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model AuditLog {

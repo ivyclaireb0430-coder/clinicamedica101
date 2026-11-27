@@ -25,8 +25,8 @@ async function login(formData: FormData) {
   }
 }
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; enabled?: string }> }) {
-  const { error, enabled } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; enabled?: string; reset?: string }> }) {
+  const { error, enabled, reset } = await searchParams;
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <form action={login} className="card relative w-full max-w-sm space-y-4 overflow-hidden pt-6">
@@ -38,6 +38,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p className="muted">Sign in to the clinic system</p>
         </div>
         {enabled && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Naka-on na ang 2FA. Mag-login ulit gamit ang code.</p>}
+        {reset && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Napalitan na ang password. Mag-login gamit ang bago.</p>}
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{MESSAGES[error] ?? MESSAGES.invalid}</p>}
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -52,6 +53,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <input className="input" id="code" name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="6 digits (if 2FA is on)" />
         </div>
         <button className="btn w-full" type="submit">Sign in</button>
+        <a href="/login/forgot" className="block text-center text-sm underline">Nakalimutan ang password?</a>
       </form>
     </main>
   );
