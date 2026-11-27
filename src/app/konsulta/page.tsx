@@ -38,13 +38,12 @@ export default async function KonsultaStartPage({ searchParams }: { searchParams
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-sky-500 text-2xl text-white" aria-hidden="true">🩺</span>
           <div>
             <h1 className="text-xl font-bold leading-tight">Online konsulta</h1>
-            <p className="text-sm text-slate-600">kasama ang AI assistant ni {doctor}</p>
+            <p className="text-sm text-slate-600">kasama ang {doctor} AI, sinanay ni Doc mismo</p>
           </div>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          <b>Paalala:</b> AI assistant po ang kakausap sa inyo, <b>hindi si {doctor} mismo</b>. Itatanong nito ang inyong nararamdaman at
-          history. Pagkatapos, babasahin ni {doctor} ang buong usapan, at <b>siya mismo ang magbibigay ng assessment at reseta</b> kung kailangan.
-          Hindi magbibigay ang AI ng diagnosis o gamot.
+          <b>Paalala:</b> Ang kakausap sa inyo ay ang <b>{doctor} AI</b>, sinanay ni Doc para magtanong at magsalita tulad niya. Pagkatapos,
+          babasahin ni {doctor} mismo ang buong usapan, at <b>siya ang magbibigay ng assessment at reseta</b> kung kailangan.
         </div>
         <ol className="space-y-1 text-sm">
           <li>1. Ikuwento sa AI assistant ang inyong concern. Puwedeng mag-attach ng picture o lab result.</li>

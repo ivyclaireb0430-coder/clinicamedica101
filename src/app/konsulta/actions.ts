@@ -93,7 +93,7 @@ export async function startConsult(formData: FormData) {
   await addConsultMessage(
     session.id,
     "AI",
-    `Hi ${d.firstName}! Ako po ang AI assistant ni ${doctor}. Tutulungan ko po kayong ikuwento ang inyong concern para mabasa at masagot ito ni ${doctor} mismo. Ano po ang pangunahing nararamdaman ninyo ngayon, at kailan po ito nagsimula?`,
+    `Hi ${d.firstName}! Kumusta po kayo? Ito po ang ${doctor} AI, sinanay ni Doc mismo. Ikuwento lang po ninyo ang inyong nararamdaman, at babasahin ito ni ${doctor} bago siya sumagot at magreseta. Ano po ang pangunahing nararamdaman ninyo ngayon, at kailan po ito nagsimula?`,
   );
   await setConsultCookie(session.id);
   redirect(`/konsulta/${session.token}`);

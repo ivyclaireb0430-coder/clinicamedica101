@@ -50,8 +50,8 @@ export default async function KonsultaSessionPage({ params, searchParams }: { pa
     <div className="card mb-3 flex items-center gap-3 p-3">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-sky-500 text-xl text-white" aria-hidden="true">🤖</span>
       <div className="min-w-0 text-sm">
-        <p className="font-semibold">AI assistant ni {doctor}</p>
-        <p className="text-xs text-slate-500">Hindi po ito si {doctor} mismo. Siya ang magre-review at magbibigay ng reseta.</p>
+        <p className="font-semibold">{doctor} AI</p>
+        <p className="text-xs text-slate-500">Sinanay ni Doc mismo. Si {doctor} ang magbabasa ng usapan at magbibigay ng reseta.</p>
       </div>
     </div>
   );
