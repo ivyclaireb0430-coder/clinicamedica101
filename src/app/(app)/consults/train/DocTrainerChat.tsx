@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { MicButton } from "@/components/MicButton";
 import { saveDocLesson, trainDocAiTurn, type DocTurnResult } from "./actions";
 
 type Kind = "STYLE" | "QUESTION" | "ADVICE" | "FACT";
@@ -111,15 +112,15 @@ export function DocTrainerChat({ doctor, starter }: { doctor: string; starter?: 
       </div>
 
       <form
-        className="flex gap-2"
+        className="space-y-2"
         onSubmit={(e) => {
           e.preventDefault();
           send(text);
         }}
       >
         <textarea
-          className="input flex-1"
-          rows={2}
+          className="input"
+          rows={3}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -128,11 +129,14 @@ export function DocTrainerChat({ doctor, starter }: { doctor: string; starter?: 
               send(text);
             }
           }}
-          placeholder="Turuan si Doc AI o magtanong…"
+          placeholder="Turuan si Doc AI o magtanong… (o pindutin ang 🎤 at magsalita)"
           maxLength={2000}
           disabled={pending}
         />
-        <button className="btn" disabled={pending || !text.trim()}>Send</button>
+        <div className="flex items-start justify-between gap-2">
+          <MicButton value={text} onChange={(t) => setText(t.slice(0, 2000))} disabled={pending} />
+          <button className="btn" disabled={pending || !text.trim()}>Send</button>
+        </div>
       </form>
       <div className="flex flex-wrap gap-1">
         {STARTERS.map((s) => (
