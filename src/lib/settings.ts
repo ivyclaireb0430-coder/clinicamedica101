@@ -16,6 +16,16 @@ export const SETTING_DEFAULTS = {
   aiHealthInquiries: "1", // AI also answers health inquiries (no medical advice; invites to book). Owner asked for this, Nov 17 2026.
   aiDailyLimit: "100", // max AI replies per day (cost cap); over the cap, the scripted bot hands off to staff
   aiUsage: "", // "YYYY-MM-DD:count"
+  // Online konsulta with the doctor's AI assistant (/konsulta). Off until the doctor's consent is confirmed and she turns it on.
+  consultEnabled: "0",
+  consultDoctorName: "", // blank = the doctor name of the landing pages
+  consultLicenseNo: "", // PRC license number, printed on the e-reseta
+  consultPtrNo: "", // PTR number, printed on the e-reseta
+  consultS2No: "", // S2 license (optional); dangerous drugs are never prescribed through online konsulta
+  consultFeeNote: "", // e.g. "Libre muna ang online konsulta" (shown to patients and known to the AI)
+  consultDailyLimit: "300", // max AI calls per day for online konsulta (cost cap)
+  consultUsage: "", // "YYYY-MM-DD:count"
+  lastConsultNotifyAt: "",
   // Last webhook deliveries from Meta, for the setup status in Settings → Messenger (ISO times).
   // Comment-to-Messenger: a private Messenger reply to people who comment on Page posts and ads. Off until turned on.
   smtpConfigEnc: "",

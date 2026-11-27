@@ -1,0 +1,1 @@
+ALTER TABLE "ConsultSession" ADD COLUMN "needsVisit" BOOLEAN NOT NULL DEFAULT false;

@@ -12,6 +12,7 @@ Mga hakbang para sa araw-araw na trabaho. Isang SOP bawat bahagi ng proseso ng p
 | 6 | [Billing at resibo](06-billing.md) | Doctor, Front desk |
 | 7 | [Dashboard at weekly review](07-dashboard.md) | Owner |
 | 8 | [Privacy at data requests](08-privacy.md) | Owner |
+| 9 | [Online konsulta (AI assistant ni Doc)](09-online-konsulta.md) | Doctor, Owner |
 
 **Mga patakaran para sa lahat:**
 

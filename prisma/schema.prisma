@@ -111,6 +111,7 @@ model Lead {
   conversation    Conversation?
   patient         Patient?
   intakeForms     IntakeForm[]
+  consults        ConsultSession[]
 
   @@index([stage])
 }
@@ -314,6 +315,7 @@ model Patient {
   charges          Charge[]
   payments         Payment[]
   packages         PatientPackage[]
+  consults         ConsultSession[]
 
   @@index([lastName, firstName])
 }
@@ -623,6 +625,81 @@ model AiExample {
 model AiLesson {
   id        String   @id @default(cuid())
   kind      String // RULE | FACT
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// ───────────── Online konsulta (AI assistant of the doctor) ─────────────
+
+/// A patient's online consultation with the doctor's AI assistant. The AI only takes the history and drafts a summary;
+/// the doctor reviews it and writes the reply and any prescription, which the patient sees only after approval.
+model ConsultSession {
+  id              String    @id @default(cuid())
+  token           String    @unique // the patient's private link /konsulta/<token>
+  status          String    @default("ACTIVE") // ACTIVE | EMERGENCY | SUBMITTED | SENT | CLOSED
+  channel         String    @default("WEBSITE") // WEBSITE | MESSENGER
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  patientId       String?
+  patient         Patient?  @relation(fields: [patientId], references: [id])
+  firstName       String
+  lastName        String?
+  mobile          String
+  email           String?
+  birthDate       String? // "YYYY-MM-DD"
+  sex             String?
+  consentVersion  String
+  consentAt       DateTime
+  summaryEnc      String? // encrypted JSON: the AI's draft summary and suggested plan, for the doctor only
+  doctorNoteEnc   String? // encrypted: the doctor's message to the patient
+  prescriptionEnc String? // encrypted JSON: the doctor's e-prescription lines
+  draftNoteEnc    String? // encrypted: the AI's draft of the doctor's message, kept to learn from the doctor's edits
+  needsVisit      Boolean   @default(false) // doctor: needs a physical exam, patient is asked to book an in-clinic visit
+  reviewedById    String?
+  submittedAt     DateTime?
+  emergencyAt     DateTime?
+  sentAt          DateTime?
+  closedAt        DateTime?
+  lastMessageAt   DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages        ConsultMessage[]
+  files           ConsultFile[]
+
+  @@index([status, lastMessageAt])
+  @@index([leadId])
+  @@index([patientId])
+}
+
+model ConsultMessage {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   ConsultSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender    String // PATIENT | AI | SYSTEM | DOCTOR
+  textEnc   String
+  createdAt DateTime       @default(now())
+
+  @@index([sessionId, createdAt])
+}
+
+/// Photos or lab results the patient uploads during an online consult. Encrypted on disk; only the doctor sees them.
+model ConsultFile {
+  id          String         @id @default(cuid())
+  sessionId   String
+  session     ConsultSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  filenameEnc String
+  mimeType    String
+  size        Int
+  storageKey  String         @unique
+  createdAt   DateTime       @default(now())
+}
+
+/// What the doctor taught her AI assistant in the "Turuan si Doc AI" chat: her style, the questions she asks,
+/// general advice she gives, and facts. Never medicines or doses. Not patient data.
+model ConsultLesson {
+  id        String   @id @default(cuid())
+  kind      String // STYLE | QUESTION | ADVICE | FACT
   text      String
   createdAt DateTime @default(now())
 }
