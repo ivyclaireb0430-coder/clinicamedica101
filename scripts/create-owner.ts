@@ -19,9 +19,9 @@ async function main() {
   }
   const password = randomBytes(12).toString("base64url");
   await db.user.create({
-    data: { email: email.toLowerCase(), name, role: "OWNER", passwordHash: await bcrypt.hash(password, 12) },
+    data: { email: email.toLowerCase(), name, role: "OWNER", passwordHash: await bcrypt.hash(password, 12), mustChangePassword: true },
   });
-  console.log(`Owner created: ${email}\nTemporary password (shown once): ${password}\nOn first login you will set up 2FA. Then change this password in More → Users & roles.`);
+  console.log(`Owner created: ${email}\nTemporary password (shown once): ${password}\nOn first login you will choose a new password, then set up 2FA.`);
 }
 
 main().finally(() => db.$disconnect());

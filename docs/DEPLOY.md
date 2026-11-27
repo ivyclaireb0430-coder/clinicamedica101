@@ -113,8 +113,9 @@ sudo bash /opt/clinic/deploy/create-owner.sh ikaw@gmail.com "Dr. Pangalan Mo"
 ```
 
 Ipapakita nito ang **temporary password** nang isang beses lang. Buksan ang
-**https://app.clinicamedica101.org**, mag-login, at i-set up ang 2FA gamit ang Google Authenticator o Authy.
-Palitan ang password sa **More → Users & roles → Change my password**.
+**https://app.clinicamedica101.org** at mag-login. Papipiliin ka agad ng sariling password (12+ characters), tapos
+i-set up ang 2FA gamit ang Google Authenticator o Authy. Puwede mo itong palitan ulit sa
+**More → Users & roles → Change my password**.
 
 Kung "not secure" o error ang lumabas: hintayin pa ang DNS (Step 3), tapos `sudo systemctl restart caddy`.
 
@@ -208,6 +209,47 @@ Subukan ang restore kahit isang beses bawat 3 buwan (sa test server), para sigur
 
 ---
 
+## Nakalimutan ang password
+
+### Pinakamadali: sa login page mismo (para sa lahat, kasama ang Owner)
+
+1. Sa login page, pindutin ang **Nakalimutan ang password?**
+2. Ilagay ang email ng account, tapos **Ipadala ang reset link**.
+3. Buksan ang email (tingnan din ang Spam). Gumagana ang link nang **30 minuto** at isang beses lang.
+4. Pumili ng bagong password (12+ characters). Kung naka-on ang 2FA, kailangan pa rin ang 6-digit code mula sa
+   authenticator app, para hindi makapasok ang sinumang nakabukas lang ng email mo.
+
+**Kailangan:** naka-set up ang email sa **More → Settings → Email** (Brevo, clinic mailbox, o Google). Subukan muna
+ito ngayon habang nakakapag-login ka pa. Kung walang dumating na email, gamitin ang mga paraan sa ibaba.
+
+### Staff (Doctor o Front desk) ang nakalimot
+
+Ang Owner ang magre-reset, sa app mismo. Walang kailangang gawin sa server.
+
+1. **More → Users & roles**. Sa tabi ng pangalan ng staff, pindutin ang **Reset password**.
+2. Lalabas ang **temporary password** nang isang beses lang. Ibigay ito nang personal o sa tawag, hindi sa chat.
+3. Pagka-login ng staff gamit ito, papipiliin siya agad ng sariling bagong password.
+4. Nawala ang phone na may 2FA? Pindutin ang **Reset 2FA** sa tabi ng pangalan niya. Naka-off na ang 2FA niya hanggang
+   i-set up ulit.
+
+Naitatala ang bawat reset sa **Audit log**.
+
+### Owner, kapag hindi gumana ang email (o nawala ang 2FA phone)
+
+Sa server ito ginagawa, para walang ibang makapag-reset ng Owner account:
+
+```bash
+sudo bash /opt/clinic/deploy/reset-password.sh ikaw@gmail.com
+```
+
+- Ipapakita ang **temporary password** nang isang beses. Mag-login gamit ito, at papipiliin ka ng bagong password.
+- Kung nawala rin ang phone na may 2FA, idagdag ang `--reset-2fa`:
+  ```bash
+  sudo bash /opt/clinic/deploy/reset-password.sh ikaw@gmail.com --reset-2fa
+  ```
+  Pagka-login, mag-scan ulit ng bagong QR code sa authenticator app.
+- Hindi mo maalala ang email? Patakbuhin nang walang email para makita ang listahan ng users.
+
 ## Kung private ang repo
 
 Kapag private ang GitHub repo, kailangan ng server ng sariling "deploy key" para ma-download ang code:
@@ -232,6 +274,6 @@ Kapag private ang GitHub repo, kailangan ng server ng sariling "deploy key" para
 - **Hindi bumubukas ang site:** `sudo systemctl status clinic caddy`. Kung "failed" ang clinic, tingnan ang
   `sudo journalctl -u clinic -n 50`. Kadalasan ay may maling setting sa `clinic.env`, at sasabihin ng log kung alin.
 - **Hindi dumarating ang Messenger replies:** tingnan sa Meta kung "verified" ang webhook, at kung tama ang Page token.
-- **Na-lock ka:** 15 minuto bago ka makasubok ulit. Kung nawala ang 2FA phone, patakbuhin ulit ang
-  `create-owner.sh` gamit ang ibang email, tapos i-deactivate ang luma sa **More → Users & roles**.
+- **Na-lock ka:** 15 minuto bago ka makasubok ulit, o i-reset agad ayon sa [Nakalimutan ang password](#nakalimutan-ang-password)
+  (inaalis din nito ang lock).
 - **Data breach o nawalang laptop/phone:** sundin ang [BREACH-RESPONSE.md](BREACH-RESPONSE.md).

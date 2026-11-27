@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Forgot the login password? Sets a new temporary password (2FA unchanged).
-# Usage: sudo bash /opt/clinic/deploy/reset-password.sh you@gmail.com
+# Forgot the login password? Sets a new temporary password (must be changed on next login).
+# Usage: sudo bash /opt/clinic/deploy/reset-password.sh you@gmail.com [--reset-2fa]
 #        (no email = list the users)
 set -euo pipefail
 cd /opt/clinic
